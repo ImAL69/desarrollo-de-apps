@@ -1,0 +1,68 @@
+Explicación paso a paso del código de la calculadora
+
+1) Vista general
+- Objetivo: crear una calculadora sencilla en una página HTML con estilo CSS y comportamiento en JavaScript. Centrar los placeholders y organizar el layout.
+
+2) Estructura HTML (calculadora.html)
+- <!DOCTYPE html> y <html lang="es">: define documento y lenguaje.
+- <meta name="viewport">: hace la página responsive en móviles.
+- <link rel="stylesheet" href="calculadora.css">: importa estilos.
+- <div class="calculator">: contenedor principal que organiza la UI.
+- <h1>: título visible "Calculadora".
+- Filas (.row) con 3 inputs y 1 botón y un campo de resultado:
+  - input#num1 (type="number"): primer número. placeholder: "Escribe tu número".
+  - input#op (type="text"): operador; placeholder: "Operador (+, -, *, /)".
+  - input#num2 (type="number"): segundo número. placeholder: "Escribe el segundo número".
+  - button#calcBtn: dispara la operación.
+  - input#result (readonly): muestra el resultado, con placeholder "Resultado".
+
+Notas HTML: cada input tiene id único para facilitar selección desde JS. El campo result es readonly para que no se escriba manualmente.
+
+3) Estilos CSS (calculadora.css)
+- body: se centra todo usando flexbox (display:flex; align-items:center; justify-content:center;) y añade fondo claro.
+- .calculator: caja con máximo ancho, fondo blanco, padding, border-radius y sombra para aspecto de tarjeta.
+- .row: margen entre elementos.
+- input[type="number"], input[type="text"]: ancho 100%, padding, borde suave, border-radius y text-align:center; esto centra tanto el texto introducido como el placeholder.
+- input::placeholder { text-align:center; color:#999; }: asegura que el placeholder aparezca centrado y con color tenue.
+- button: estilo visual, color, padding y cursor pointer.
+- .result-row input[readonly]: fondo y borde diferenciados para indicar que es solo lectura.
+
+4) JavaScript (incluido al final de calculadora.html)
+- Selección de elementos:
+  const btn = document.getElementById('calcBtn');
+  document.getElementById('num1'), 'num2', 'op' se escuchan para Enter.
+
+- Event listeners:
+  - btn.addEventListener('click', doCalc): ejecuta la función al hacer clic.
+  - keydown en num1, num2, op: si la tecla es Enter se llama a doCalc(). Esto mejora la usabilidad.
+
+- Función doCalc(): flujo y validaciones
+  1. Leer y parsear valores:
+     const n1 = parseFloat(document.getElementById('num1').value);
+     const n2 = parseFloat(document.getElementById('num2').value);
+     const op = (document.getElementById('op').value || '').trim();
+  2. Validación: si n1 o n2 no son números (isNaN) o op está vacío, se muestra alert y se sale.
+  3. switch(op): según el operador se calcula:
+     - '+': suma
+     - '-': resta
+     - '*', 'x', 'X': multiplicación (acepta x/X como atajo)
+     - '/': división; si n2 === 0 se alerta "División por cero no permitida".
+     - default: operador inválido → alert.
+  4. Asignar resultado: document.getElementById('result').value = res;
+
+- Comportamiento extra: el código acepta tanto '*' como 'x'/'X' para multiplicar, y protege de división por cero.
+
+5) Uso
+- Abrir calculadora.html en navegador.
+- Introducir primer número, operador (+,-,*,/), segundo número.
+- Pulsar "Hacer la operación" o presionar Enter en cualquiera de los campos.
+- Ver resultado en el campo "Resultado".
+
+6) Posibles mejoras futuras
+- Añadir manejo de espacios en el campo operador (ya se hace trim), aceptar palabras como "por" o "multiplicar".
+- Mostrar errores inline en vez de alertas.
+- Soportar expresiones completas (ej: "2 + 2 * 3") mediante un parser.
+- Internacionalización de textos/labels.
+- Añadir tests unitarios y validaciones más robustas (ej: limites, notación exponencial).
+
+Fin del documento.

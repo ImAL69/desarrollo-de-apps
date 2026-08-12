@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Calculadora</title>
+    <link rel="stylesheet" href="calculadora.css">
+</head>
+<body>
+<div class="calculator">
+  <h1>Calculadora</h1>
+  <div class="row">
+    <input id="num1" type="number" placeholder="Escribe tu número">
+  </div>
+  <div class="row">
+    <input id="op" type="text" placeholder="Operador (+, -, *, /)">
+  </div>
+  <div class="row">
+    <input id="num2" type="number" placeholder="Escribe el segundo número">
+  </div>
+  <div class="row">
+    <button id="calcBtn">Hacer la operación</button>
+  </div>
+  <div class="row result-row">
+    <input id="result" type="text" placeholder="Resultado" readonly>
+  </div>
+</div>
+<script>
+const btn = document.getElementById('calcBtn');
+btn.addEventListener('click', doCalc);
+
+['num1','num2','op'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') doCalc(); });
+});
+
+function doCalc(){
+  const n1 = parseFloat(document.getElementById('num1').value);
+  const n2 = parseFloat(document.getElementById('num2').value);
+  const op = (document.getElementById('op').value || '').trim();
+  if (isNaN(n1) || isNaN(n2) || !op){ alert('Introduce ambos números y un operador válido (+, -, *, /).'); return; }
+  let res;
+  switch(op){
+    case '+': res = n1 + n2; break;
+    case '-': res = n1 - n2; break;
+    case '*': case 'x': case 'X': res = n1 * n2; break;
+    case '/': if (n2 === 0){ alert('División por cero no permitida'); return; } res = n1 / n2; break;
+    default: alert('Operador inválido. Usa +, -, * o /.'); return;
+  }
+  document.getElementById('result').value = res;
+}
+</script>
+</body>
+</html>
