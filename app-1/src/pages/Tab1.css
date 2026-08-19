@@ -1,0 +1,25 @@
+.calculator {
+  max-width: 420px;
+  margin: 24px auto;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--ion-color-light);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.calculator-display {
+  width: 100%;
+  min-height: 72px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--ion-color-dark);
+  color: var(--ion-color-light);
+  font-size: 2rem;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.calculator-grid {
+  padding: 0;
+}
