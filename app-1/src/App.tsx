@@ -1,87 +1,70 @@
-import { Redirect, Route } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { IonApp, setupIonicReact } from '@ionic/react';
 import {
-  IonApp,
-  IonIcon,
-  IonLabel,
-  IonRouterOutlet,
-  IonTabBar,
-  IonTabButton,
-  IonTabs,
-  setupIonicReact
-} from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
-import Tab1 from './pages/Tab1';
-import Tab2 from './pages/Tab2';
-import Tab3 from './pages/Tab3';
-
-/* Core CSS required for Ionic components to work properly */
+  bagHandleOutline, checkmarkCircleOutline, closeOutline, heart, heartOutline,
+  menuOutline, removeOutline, addOutline, searchOutline, trashOutline,
+  star, arrowForwardOutline, shieldCheckmarkOutline, cubeOutline
+} from 'ionicons/icons';
+import { IonIcon } from '@ionic/react';
 import '@ionic/react/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
-
-/* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
-
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
-import '@ionic/react/css/palettes/dark.system.css';
-
-/* Theme variables */
 import './theme/variables.css';
+import './store.css';
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonTabs>
-        <IonRouterOutlet>
-          <Route exact path="/tab1">
-            <Tab1 />
-          </Route>
-          <Route exact path="/tab2">
-            <Tab2 />
-          </Route>
-          <Route path="/tab3">
-            <Tab3 />
-          </Route>
-          <Route exact path="/">
-            <Redirect to="/tab1" />
-          </Route>
-        </IonRouterOutlet>
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>Tab 1</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab2" href="/tab2">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>Tab 2</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab3" href="/tab3">
-            <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Tab 3</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      </IonTabs>
-    </IonReactRouter>
-  </IonApp>
-);
+type Product = { id: number; name: string; universe: string; price: number; category: string; color: string; accent: string; art: string; badge?: string; rating: string };
+type CartLine = Product & { qty: number };
 
+const products: Product[] = [
+  { id: 1, name: 'Satoru Gojo', universe: 'Jujutsu Kaisen', price: 189900, category: 'Hechiceros', color: '#4c3e72', accent: '#cad4ff', art: '◉', badge: 'NUEVO', rating: '4.9' },
+  { id: 2, name: 'Nezuko Kamado', universe: 'Demon Slayer', price: 164900, category: 'Cazadores', color: '#76264d', accent: '#f7b3c9', art: '◈', badge: '-15%', rating: '4.8' },
+  { id: 3, name: 'Monkey D. Luffy', universe: 'One Piece', price: 209900, category: 'Piratas', color: '#a72e39', accent: '#f5d39b', art: '✦', rating: '5.0' },
+  { id: 4, name: 'Tanjiro Kamado', universe: 'Demon Slayer', price: 174900, category: 'Cazadores', color: '#235c57', accent: '#f0d6a5', art: '✧', rating: '4.9' },
+  { id: 5, name: 'Itachi Uchiha', universe: 'Naruto Shippuden', price: 154900, category: 'Ninjas', color: '#3a233d', accent: '#c84043', art: '◆', badge: 'ÚLTIMAS', rating: '4.7' },
+  { id: 6, name: 'Anya Forger', universe: 'Spy x Family', price: 119900, category: 'Espías', color: '#d07288', accent: '#f6e9ce', art: '●', rating: '4.9' },
+  { id: 7, name: 'Roronoa Zoro', universe: 'One Piece', price: 194900, category: 'Piratas', color: '#346c5d', accent: '#e4e1c2', art: '✹', rating: '4.8' },
+  { id: 8, name: 'Power', universe: 'Chainsaw Man', price: 249900, category: 'Demonios', color: '#b44d4a', accent: '#ffd080', art: '⬟', badge: 'PREVENTA', rating: '4.9' },
+];
+
+const money = (number: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(number);
+
+function App() {
+  const [cart, setCart] = useState<CartLine[]>(() => JSON.parse(localStorage.getItem('collecto-cart') || '[]'));
+  const [favorites, setFavorites] = useState<number[]>(() => JSON.parse(localStorage.getItem('collecto-favs') || '[]'));
+  const [category, setCategory] = useState('Todo');
+  const [query, setQuery] = useState('');
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkout, setCheckout] = useState(false);
+  const [orderDone, setOrderDone] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [page, setPage] = useState('inicio');
+  useEffect(() => localStorage.setItem('collecto-cart', JSON.stringify(cart)), [cart]);
+  useEffect(() => localStorage.setItem('collecto-favs', JSON.stringify(favorites)), [favorites]);
+  const shown = useMemo(() => products.filter(p => (category === 'Todo' || p.category === category) && `${p.name} ${p.universe}`.toLowerCase().includes(query.toLowerCase())), [category, query]);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const addCart = (product: Product) => { setCart(old => { const found = old.find(item => item.id === product.id); return found ? old.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item) : [...old, { ...product, qty: 1 }]; }); setCartOpen(true); };
+  const updateQty = (id: number, qty: number) => setCart(old => qty < 1 ? old.filter(x => x.id !== id) : old.map(x => x.id === id ? { ...x, qty } : x));
+  const toggleFav = (id: number) => setFavorites(old => old.includes(id) ? old.filter(x => x !== id) : [...old, id]);
+  const go = (destination: string) => { setPage(destination); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const productGrid = (items = shown) => <div className="product-grid">{items.map(product => <article className="product-card" key={product.id}><div className="product-visual" style={{ '--base': product.color, '--accent': product.accent } as React.CSSProperties}>{product.badge && <span className="badge">{product.badge}</span>}<button className="favorite" aria-label={`Guardar ${product.name} en favoritos`} onClick={() => toggleFav(product.id)}><IonIcon icon={favorites.includes(product.id) ? heart : heartOutline}/></button><div className="figure-art"><span>{product.art}</span><i/><b/></div></div><div className="product-info"><p>{product.universe}</p><h3>{product.name}</h3><div><span className="rating"><IonIcon icon={star}/> {product.rating}</span><strong>{money(product.price)}</strong></div><button className="add" onClick={() => addCart(product)}>Añadir al carrito <IonIcon icon={addOutline}/></button></div></article>)}</div>;
+  return <IonApp><main>
+    <div className="topbar">Envío gratis a toda Colombia en pedidos superiores a $250.000 <span>✦</span> Figuras 100% originales</div>
+    <header>
+      <button className="brand" onClick={() => go('inicio')}><span>CO</span>LLECTO</button>
+      <nav className={menuOpen ? 'open' : ''}><button onClick={() => go('catalogo')}>Catálogo</button><button onClick={() => go('novedades')}>Novedades</button><button onClick={() => go('colecciones')}>Colecciones</button><button onClick={() => go('nosotros')}>Nosotros</button></nav>
+      <div className="header-actions"><button className="icon-button search-mobile" aria-label="Buscar"><IonIcon icon={searchOutline}/></button><button className="cart-trigger" onClick={() => setCartOpen(true)}><IonIcon icon={bagHandleOutline}/><span className="cart-text">Carrito</span>{cart.length > 0 && <b>{cart.reduce((n, x) => n + x.qty, 0)}</b>}</button><button className="menu" onClick={() => setMenuOpen(!menuOpen)}><IonIcon icon={menuOutline}/></button></div>
+    </header>
+    {page === 'inicio' && <><section className="hero"><div className="hero-copy"><p className="eyebrow">Edición limitada · septiembre</p><h1>Tu anime,<br/><em>en una vitrina.</em></h1><p>Figuras que cuentan historias. Encuentra piezas únicas de tus universos favoritos.</p><button className="primary" onClick={() => go('catalogo')}>Explorar figuras <IonIcon icon={arrowForwardOutline}/></button></div><div className="hero-art"><div className="orb orb-one"/><div className="orb orb-two"/><div className="hero-figure"><div className="helmet">◆</div><div className="cape"/><div className="torso"/><div className="figure-shadow"/></div><p>ANIME<br/>LEGENDS</p></div><div className="hero-note"><span>01</span><i/> Figuras anime<br/>con historia</div></section><section className="benefits"><div><IonIcon icon={shieldCheckmarkOutline}/><span><b>Compra segura</b>Protegemos cada pedido</span></div><div><IonIcon icon={cubeOutline}/><span><b>Empaque de colección</b>Llega impecable a tu hogar</span></div><div><span className="truck">↗</span><span><b>Envíos nacionales</b>Gratis desde $250.000</span></div></section><section className="catalog preview"><div className="section-heading"><div><p className="eyebrow">Selección de la semana</p><h2>Favoritos otaku</h2></div><button className="view-link" onClick={() => go('catalogo')}>Ver catálogo <IonIcon icon={arrowForwardOutline}/></button></div>{productGrid(products.slice(0,4))}</section></>}
+    {page === 'catalogo' && <section className="catalog page-view"><div className="section-heading"><div><p className="eyebrow">Todas las figuras son originales</p><h2>Catálogo anime</h2></div></div><div className="toolbar"><div className="chips">{['Todo','Hechiceros','Cazadores','Piratas','Ninjas','Espías','Demonios'].map(item => <button key={item} className={category === item ? 'selected' : ''} onClick={() => setCategory(item)}>{item}</button>)}</div><label className="search"><IonIcon icon={searchOutline}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar personaje"/></label></div>{productGrid()}{shown.length === 0 && <div className="empty">No encontramos figuras con esa búsqueda.</div>}</section>}
+    {page === 'novedades' && <section className="new-page page-view"><div className="new-feature"><div><p className="eyebrow">Recién llegadas</p><h1>Lo nuevo<br/><em>ya está aquí.</em></h1><p>Reservas, ediciones especiales y figuras recién liberadas de los mejores animes.</p><button className="primary" onClick={() => { setCategory('Todo'); go('catalogo'); }}>Ver novedades <IonIcon icon={arrowForwardOutline}/></button></div><div className="new-visual"><span>⬟</span><i>PREVENTA<br/>SEPTIEMBRE</i></div></div><div className="catalog compact"><p className="eyebrow">Piezas destacadas</p>{productGrid(products.filter(x => x.badge).slice(0,3))}</div></section>}
+    {page === 'colecciones' && <section className="collections-page page-view"><div className="section-heading"><div><p className="eyebrow">Universos para coleccionar</p><h2>Elige tu saga</h2></div></div><div className="collection-list">{[['Jujutsu Kaisen','Maldiciones, hechiceros y energía oscura','◉','#5a417d'],['Demon Slayer','Respira hondo antes de desenvainar','✧','#7a294f'],['One Piece','Aventura sin fronteras y sueños gigantes','✦','#a93641'],['Naruto','El camino ninja empieza aquí','◆','#70495f']].map(([title,copy,icon,color]) => <button key={title} style={{'--collection':color} as React.CSSProperties} onClick={() => go('catalogo')}><span>{icon}</span><div><h3>{title}</h3><p>{copy}</p></div><IonIcon icon={arrowForwardOutline}/></button>)}</div></section>}
+    {page === 'nosotros' && <section className="about-page page-view"><p className="eyebrow">Nuestra historia</p><h1>Hecho por fans,<br/><em>para fans.</em></h1><div className="about-columns"><p>Collecto nació para darle a cada figura el lugar que merece: lejos del polvo, cerca de quienes viven cada historia.</p><p>Seleccionamos coleccionables anime originales, con empaques seguros y la emoción de abrir una pieza que ya es parte de tu universo.</p></div><div className="about-stats"><div><b>100%</b><span>Figuras originales</span></div><div><b>+8</b><span>Universos anime</span></div><div><b>48h</b><span>Despacho estimado</span></div></div></section>}
+    <footer><button className="brand" onClick={() => go('inicio')}><span>CO</span>LLECTO</button><p>Figuras originales para historias que merecen quedarse.</p><small>© 2026 Collecto · Proyecto demostrativo</small></footer>
+    {cartOpen && <aside className="cart-panel"><div className="panel-head"><h2>Tu carrito <small>({cart.reduce((n,x) => n+x.qty, 0)})</small></h2><button onClick={() => setCartOpen(false)}><IonIcon icon={closeOutline}/></button></div>{cart.length ? <><div className="cart-items">{cart.map(item => <div className="cart-item" key={item.id}><div className="mini-art" style={{background: item.color}}>{item.art}</div><div><p>{item.universe}</p><h3>{item.name}</h3><strong>{money(item.price)}</strong><div className="quantity"><button onClick={() => updateQty(item.id,item.qty-1)}><IonIcon icon={removeOutline}/></button><span>{item.qty}</span><button onClick={() => updateQty(item.id,item.qty+1)}><IonIcon icon={addOutline}/></button></div></div><button className="remove" onClick={() => updateQty(item.id,0)}><IonIcon icon={trashOutline}/></button></div>)}</div><div className="cart-bottom"><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><p>Envío calculado en el checkout.</p><button className="primary full" onClick={() => {setCartOpen(false);setCheckout(true)}}>Continuar al checkout <IonIcon icon={arrowForwardOutline}/></button></div></> : <div className="cart-empty"><IonIcon icon={bagHandleOutline}/><h3>Tu carrito está vacío</h3><p>Es momento de encontrar tu próxima figura.</p><button className="outline" onClick={() => setCartOpen(false)}>Ver catálogo</button></div>}</aside>}
+    {(cartOpen || checkout || orderDone) && <div className="overlay" onClick={() => {setCartOpen(false); if(!orderDone)setCheckout(false)}}/>}
+    {checkout && <div className="checkout modal"><button className="modal-close" onClick={() => {setCheckout(false);setPaymentMessage(false)}}><IonIcon icon={closeOutline}/></button><p className="eyebrow">Resumen de compra</p><h2>Ir a comprar</h2><div className="checkout-items">{cart.map(item => <div key={item.id}><span>{item.name} <small>× {item.qty}</small></span><b>{money(item.price * item.qty)}</b></div>)}</div><div className="checkout-totals"><div><span>Subtotal</span><b>{money(subtotal)}</b></div><div><span>Envío</span><b>{subtotal >= 250000 ? 'Gratis' : money(15000)}</b></div><div className="grand-total"><strong>Total</strong><strong>{money(subtotal + (subtotal >= 250000 ? 0 : 15000))}</strong></div></div><form onSubmit={e => e.preventDefault()}><label>Nombre completo<input placeholder="Tu nombre"/></label><label>Correo electrónico<input type="email" placeholder="tu@email.com"/></label><label>Dirección de entrega<input placeholder="Calle, ciudad y apartamento"/></label><div className="payment-note"><IonIcon icon={shieldCheckmarkOutline}/><span><b>Pago desactivado</b>Este es un checkout demostrativo. El botón no procesa pagos reales.</span></div>{paymentMessage && <p className="payment-message">El pago está desactivado en esta demostración. Tu carrito sigue guardado.</p>}<button type="button" className="primary full disabled-pay" onClick={() => setPaymentMessage(true)}>Pagar {money(subtotal + (subtotal >= 250000 ? 0 : 15000))} <IonIcon icon={shieldCheckmarkOutline}/></button><button type="button" className="back-cart" onClick={() => {setCheckout(false);setCartOpen(true)}}>← Volver al carrito</button></form></div>}
+    {orderDone && <div className="success modal"><IonIcon icon={checkmarkCircleOutline}/><p className="eyebrow">¡Todo listo!</p><h2>Pedido confirmado</h2><p>Tu número de pedido es <b>#COL-{Math.floor(10000 + Math.random()*89999)}</b>. Recibirás la confirmación en tu correo.</p><button className="primary full" onClick={() => setOrderDone(false)}>Seguir explorando</button></div>}
+  </main></IonApp>;
+}
 export default App;

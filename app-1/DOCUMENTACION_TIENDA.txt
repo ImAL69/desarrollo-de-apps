@@ -1,0 +1,100 @@
+DOCUMENTACION — COLLECTO / TIENDA DE FIGURAS ANIME
+===================================================
+
+1. OBJETIVO DEL PROYECTO
+------------------------
+Se transformó el starter de Ionic en una tienda web responsive de figuras de
+anime. El proyecto no depende de una pasarela de pagos real: permite recorrer
+el catálogo, buscar, filtrar, guardar favoritos, añadir productos al carrito,
+modificar cantidades, eliminarlos y revisar un checkout de demostración.
+
+2. VISTAS DE LA APLICACIÓN
+--------------------------
+La navegación superior cambia la vista sin recargar la página. El estado
+"page" determina cuál se muestra:
+
+- Inicio: presentación, beneficios y cuatro figuras recomendadas.
+- Catálogo: muestra todos los productos, filtros por grupo y búsqueda.
+- Novedades: muestra preventas y productos con etiquetas especiales.
+- Colecciones: agrupa los universos anime y lleva al catálogo.
+- Nosotros: explica el propósito de la tienda y presenta indicadores.
+
+La función go(destino) actualiza la vista, cierra el menú móvil y ejecuta
+window.scrollTo({ top: 0, behavior: 'smooth' });. Así cada navegación empieza
+arriba y se siente como una nueva página. El contenido puede desplazarse de
+manera normal mediante el scroll del navegador.
+
+3. CATÁLOGO Y FILTROS
+---------------------
+Los ocho productos están definidos en el arreglo "products" de App.tsx. Cada
+producto contiene identificador, personaje, franquicia, precio en COP, grupo,
+colores de la tarjeta, distintivo y valoración.
+
+El estado "category" guarda el filtro elegido y "query" guarda lo escrito en
+el buscador. La variable "shown" usa useMemo para filtrar por ambas condiciones
+sin recalcular innecesariamente en cada render. productGrid reutiliza la misma
+tarjeta visual en Inicio, Catálogo y Novedades.
+
+4. LÓGICA DEL CARRITO (PUNTO PRINCIPAL)
+---------------------------------------
+El carrito vive en el estado "cart" y cada línea guarda los datos del producto
+más "qty" (cantidad). La función addCart(producto) funciona así:
+
+1. Busca si el producto ya existe en el carrito mediante su id.
+2. Si existe, aumenta qty en uno.
+3. Si no existe, agrega una nueva línea con qty igual a uno.
+4. Abre el panel lateral del carrito para dar retroalimentación inmediata.
+
+updateQty(id, cantidad) permite los controles + y -. Si la cantidad es menor a
+uno, elimina la línea; si no, solo actualiza esa cantidad. El botón de papelera
+llama updateQty(id, 0), por lo que elimina directamente el producto.
+
+"subtotal" suma precio × cantidad de todas las líneas usando reduce. El número
+que aparece sobre el icono del carrito suma las cantidades, no solo productos
+diferentes. Esto hace que el total y contador sigan siendo correctos al agregar
+un mismo personaje varias veces.
+
+El carrito se persiste con localStorage: cada modificación se guarda con la
+clave "collecto-cart". Cuando se abre de nuevo el navegador, el estado inicial
+lee esa clave. Los favoritos usan la misma lógica con "collecto-favs".
+
+5. APARTADO “IR A COMPRAR” Y PAGOS
+----------------------------------
+Desde el carrito, "Continuar al checkout" abre la ventana “Ir a comprar”. Allí
+se ve cada producto, su cantidad, su precio acumulado, subtotal, envío y total.
+El envío es gratis desde $250.000 COP; debajo de ese valor se suman $15.000 COP.
+
+El botón “Pagar” ES INTENCIONALMENTE NO FUNCIONAL. Solo muestra un aviso que
+indica que los pagos están desactivados y conserva el carrito. No envía datos,
+no llama APIs, no vacía el carrito y no realiza cobros. El botón “Volver al
+carrito” permite editar productos y cantidades antes de intentar comprar.
+
+6. RESPONSIVE Y DISEÑO
+----------------------
+La interfaz se adapta en dos puntos principales:
+
+- Hasta 800px: las tarjetas se muestran en dos columnas y varias secciones se
+  compactan.
+- Hasta 590px: se habilita el menú hamburguesa, el hero pasa a una columna,
+  los controles se apilan, los paneles ocupan el ancho de pantalla y las vistas
+  de colecciones/nosotros se adaptan para teléfonos.
+
+Se usó una paleta de vino tinto, morado y beige. Las figuras son tarjetas de
+anime estilizadas por CSS, sin recursos externos obligatorios. Las animaciones
+son suaves: float para la figura principal, figurePulse para figuras de tarjetas
+y rise para entradas de vistas y productos.
+
+7. ARCHIVOS MODIFICADOS
+-----------------------
+- src/App.tsx: datos, estados, vistas, navegación, carrito y checkout.
+- src/store.css: paleta, distribución, animaciones y reglas responsive.
+- src/theme/variables.css: tipografía base de Ionic.
+- DOCUMENTACION_TIENDA.txt: este documento.
+
+8. PRÓXIMAS MEJORAS POSIBLES
+----------------------------
+- Conectar un backend para inventario y cuentas reales.
+- Añadir páginas de detalle por figura y fotos reales con licencia.
+- Integrar una pasarela de pago solo cuando se cuente con credenciales y
+  requisitos de seguridad.
+- Convertir las vistas internas en rutas URL independientes.
