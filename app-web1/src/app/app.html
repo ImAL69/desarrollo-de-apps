@@ -1,3 +1,17 @@
-<main class="app-shell">
-  <router-outlet />
-</main>
+<div class="topbar">ENVÍO GRATIS DESDE $250.000 COP · FIGURAS 100% ORIGINALES</div>
+<header class="navbar">
+  <div class="container nav-inner">
+    <a class="brand" routerLink="/" (click)="closeMenu()">collecto<span>·</span></a>
+    <button class="hamburger" type="button" (click)="menuOpen = !menuOpen" aria-label="Abrir menú"><span></span><span></span><span></span></button>
+    <nav class="nav-links" [class.open]="menuOpen">
+      <a routerLink="/catalogo" routerLinkActive="active" (click)="closeMenu()">Catálogo</a>
+      <a routerLink="/novedades" routerLinkActive="active" (click)="closeMenu()">Novedades</a>
+      <a routerLink="/colecciones" routerLinkActive="active" (click)="closeMenu()">Colecciones</a>
+      <a routerLink="/nosotros" routerLinkActive="active" (click)="closeMenu()">Nosotros</a>
+    </nav>
+    <button class="cart-button" type="button" (click)="ui.openCartDrawer()" aria-label="Abrir carrito">🛍 <span class="cart-count">{{ cart.itemCount$ | async }}</span></button>
+  </div>
+</header>
+<main class="app-shell"><router-outlet /></main>
+<footer class="footer"><div class="container footer-grid"><div><a class="brand" routerLink="/">collecto<span>·</span></a><p>Figuras anime seleccionadas para coleccionistas.</p></div><div><h4>Explora</h4><a routerLink="/catalogo">Catálogo</a><a routerLink="/novedades">Novedades</a></div><div><h4>Collecto</h4><a routerLink="/colecciones">Colecciones</a><a routerLink="/nosotros">Nosotros</a></div></div><div class="container footer-note">© 2026 COLLECTO · COLECCIONA HISTORIAS</div></footer>
+@if (ui.cartDrawerOpen$ | async) { <app-cart-drawer /> }

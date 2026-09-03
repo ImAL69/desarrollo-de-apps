@@ -1,0 +1,230 @@
+CONSUMO DE APIS EN COLLECTO - UBICACION Y LOGICA
+
+1. INTRODUCCION
+La aplicación Collecto tiene dos tipos principales de consumo de API:
+
+- Frontend Angular: consume la API pública Fake Store para obtener el catálogo.
+- Backend Express: expone endpoints propios y se conecta a Stripe para crear Payment Intents y recibir webhooks.
+
+La regla principal es esta:
+- el frontend NO debe tener la clave secreta de Stripe
+- el frontend solo consume datos del catálogo y del backend
+- el backend es el encargado de validar negocios y pagos
+
+2. CONSUMO DE API EN EL FRONTEND ANGULAR
+
+2.1. Donde se consume
+El consumo de la API se hace en los servicios Angular, específicamente dentro de:
+
+- src/app/core/services/catalog.service.ts
+
+Este archivo es el punto central para obtener productos. Si se usa Fake Store, normalmente se hace algo como:
+
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { map } from 'rxjs/operators';
+
+@Injectable({ providedIn: 'root' })
+export class CatalogService {
+  constructor(private http: HttpClient) {}
+
+  getProducts() {
+    return this.http.get<any[]>('https://fakestoreapi.com/products').pipe(
+      map(products => products.map(product => ({
+        id: product.id,
+        name: product.title,
+        price: product.price,
+        category: product.category,
+        universe: product.category,
+        color: '#6c2949',
+        accent: '#e4ba78',
+        art: product.image,
+        rating: String(product.rating?.rate ?? '4.5'),
+        stock: 20,
+        description: product.description,
+        image: product.image,
+        badge: 'Nuevo'
+      })))
+    );
+  }
+}
+
+2.2. Que hace exactamente
+- realiza una llamada GET a https://fakestoreapi.com/products
+- recibe un array de productos
+- los transforma al modelo Product del proyecto
+- devuelve un observable listo para usarse en componentes
+
+2.3. Donde se usa este servicio
+El servicio se usa desde las vistas del catálogo, por ejemplo:
+
+- src/app/features/catalog/catalog.component.ts
+- src/app/features/home/home.component.ts
+- src/app/features/new-releases/new-releases.component.ts (si existe)
+
+Ejemplo conceptual:
+
+constructor(private catalog: CatalogService) {}
+
+ngOnInit() {
+  this.catalog.getProducts().subscribe(products => {
+    this.products = products;
+  });
+}
+
+2.4. Tipo de API
+Es una API REST pública, no autenticada, que devuelve JSON. En Angular se consume con HttpClient.
+
+3. CONSUMO DE API DEL BACKEND EXPRESS
+
+3.1. Donde se expone el backend
+El backend se encuentra en:
+
+- server/src/index.ts
+
+Este archivo levanta Express, define CORS, carga variables de entorno y monta endpoints.
+
+Ejemplo conceptual:
+
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import Stripe from 'stripe';
+
+dotenv.config();
+const app = express();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-02-24.acacia' });
+
+app.use(cors({ origin: 'http://localhost:4200' }));
+app.use(express.json());
+
+app.post('/api/payments/create-intent', async (req, res) => {
+  // crear PaymentIntent
+});
+
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  // verificar webhook
+});
+
+app.listen(process.env.PORT || 3000);
+
+3.2. Donde se manejan los datos del carrito para pago
+El frontend llama a:
+
+- POST /api/payments/create-intent
+
+Esto se hace desde:
+
+- src/app/core/services/payment.service.ts
+
+Ejemplo:
+
+createIntent(items: { productId: number; qty: number }[], customer: CheckoutForm) {
+  return this.http.post<PaymentIntentResponse>(`${this.apiUrl}/api/payments/create-intent`, {
+    items,
+    customer
+  });
+}
+
+3.3. Como se usa en el checkout
+El checkout se encuentra en:
+
+- src/app/features/checkout/checkout.component.ts
+
+La lógica es:
+- obtener carrito
+- validar formulario
+- enviar ids y cantidades
+- recibir clientSecret
+- montar el Payment Element de Stripe
+- confirmar el pago
+- consultar estado de la orden
+
+Ejemplo conceptual:
+
+this.payments.createIntent(items, this.form.getRawValue()).subscribe({
+  next: (response) => {
+    this.clientSecret = response.clientSecret;
+    this.orderId = response.orderId;
+    this.loadStripePayment();
+  },
+  error: () => {
+    this.error = 'No se pudo iniciar el pago.';
+  }
+});
+
+3.4. Donde se procesa el webhook
+El webhook vive en:
+
+- server/src/index.ts
+
+Ahi se usa:
+
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+
+  if (event.type === 'payment_intent.succeeded') {
+    // cambiar orden a paid
+  }
+
+  res.status(200).send('OK');
+});
+
+Esto es esencial porque Stripe confirma el pago desde el servidor, no desde el navegador.
+
+4. DONDE ESTA EL CATALOGO Y EL CARRITO
+
+4.1. Catálogo
+- CatalogService: obtiene productos desde la API
+- CatalogComponent: renderiza la lista
+- ProductCardComponent: muestra cada producto
+
+4.2. Carrito
+- CartService: maneja estado del carrito
+- CartDrawerComponent: muestra el drawer lateral
+- AppShell / app.html: botón global de carrito arriba a la derecha
+
+5. COMO FLUYE LA INFORMACION
+
+5.1. Flujo del catálogo
+Frontend -> CatalogService -> GET https://fakestoreapi.com/products -> map -> Product[] -> UI
+
+5.2. Flujo del carrito
+UI -> CartService -> localStorage -> BehaviorSubject -> componentes
+
+5.3. Flujo del checkout y Stripe
+UI -> PaymentService -> POST /api/payments/create-intent -> backend -> Stripe -> clientSecret -> Payment Element -> confirm -> webhook -> order state -> UI
+
+6. ARCHIVOS IMPORTANTES
+
+Frontend:
+- src/app/core/services/catalog.service.ts
+- src/app/core/services/payment.service.ts
+- src/app/core/services/cart.service.ts
+- src/app/features/catalog/catalog.component.ts
+- src/app/features/checkout/checkout.component.ts
+- src/app/app.html
+- src/styles.css
+
+Backend:
+- server/src/index.ts
+- server/src/catalog.ts
+- server/.env.example
+
+7. REGLA CLAVE
+La app no hace todo en el frontend. La lógica es esta:
+- Angular consume la API Fake Store para mostrar productos
+- Angular usa localStorage para carrito y favoritos
+- Angular le pide al backend un PaymentIntent
+- el backend valida y llama a Stripe
+- Stripe confirma por webhook
+- el frontend solo actualiza la UI según el estado final
+
+8. RESUMEN
+El consumo de APIs en esta app se hace en dos capas:
+
+1. Frontend: Fake Store para catálogo, HttpClient para peticiones.
+2. Backend: Express + Stripe para pagos y validaciones de negocio.
+
+La parte más importante es entender que la lógica crítica no vive en Angular. La confianza real de pago y precios está en el backend, y Stripe es la fuente final de verdad.

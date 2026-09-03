@@ -1,0 +1,248 @@
+{
+  "title": "Recrear Collecto como Angular + Stripe",
+  "language": "es",
+  "role": "Actúa como desarrollador senior de Angular, TypeScript, CSS responsive, Stripe y backend Node.js. Debes entregar una solución completa, coherente y ejecutable.",
+  "objective": "Recrea desde cero una aplicación Angular llamada Collecto: una tienda responsive inspirada en el proyecto React original, pero con catálogo alimentado desde la API pública https://fakestoreapi.com/products. Debe conservar la identidad visual de vino tinto, morado y beige, el tono editorial, las animaciones sutiles, la navegación y el flujo de compra completo. La funcionalidad principal debe incluir catálogo, filtros, búsqueda, favoritos, carrito persistente, edición de cantidades, checkout y confirmación de compra. La diferencia clave es que el checkout dejará de ser un simulador y se integrará con Stripe de forma real y segura, usando un backend dedicado para crear Payment Intents y validar pagos mediante webhook.",
+  "success_definition": "El proyecto debe verse y sentirse como una tienda premium de coleccionistas, funcionar en desktop y móvil, consumir la API Fake Store como fuente de datos del catálogo, y usar Stripe como fuente de verdad del pago. El código debe ser mantenible, typed, modular y listo para ejecutarse localmente con Angular + Express.",
+  "constraints": [
+    "Usa Angular actual con componentes standalone, routing, TypeScript estricto, servicios inyectables y CSS propio; no uses React ni Ionic React.",
+    "Usa https://fakestoreapi.com/products como fuente inicial del catálogo. Si el endpoint no sirve para figuras anime, conviértelo en un catálogo visual con el mismo diseño y mapea los campos a tu modelo Product.",
+    "No elimines funcionalidades: catálogo, filtros, búsqueda, favoritos, carrito persistente, edición de cantidades, checkout, total y todas las rutas deben funcionar.",
+    "No uses imágenes externas obligatorias. Si la API no aporta imágenes adecuadas, puedes usar placeholders de estilo editorial o arte CSS, manteniendo la estética del proyecto original.",
+    "No pongas STRIPE_SECRET_KEY, claves privadas ni lógica de creación de PaymentIntents en Angular. Eso pertenece exclusivamente al backend.",
+    "No marques un pedido como pagado solo por hacer clic. Confirma el pago desde el backend mediante webhook de Stripe.",
+    "El precio definitivo debe calcularse en el servidor, nunca confiar en precios ni totales recibidos desde el navegador.",
+    "Incluye mensajes de error, carga y éxito claros en todo el flujo de checkout.",
+    "No cierres el carrito al cancelar una compra. Si falla el pago, conserva el carrito y deja al usuario corregir la operación.",
+    "No hibrides lógica de negocios en el frontend: el cliente solo envía ids y cantidades, el backend resuelve precios, totales, stock y validación.",
+    "Mantén la experiencia UX fluida: toda navegación debe ser SPA, sin recargas completas del navegador."
+  ],
+  "stack": {
+    "frontend": "Angular 19+ con standalone components, Angular Router, Reactive Forms, HttpClient y servicios de estado. El catálogo se consume desde https://fakestoreapi.com/products.",
+    "backend": "Node.js + Express + TypeScript",
+    "payments": "Stripe Payment Intents con Payment Element o Stripe Elements",
+    "persistence_frontend": "localStorage para carrito, favoritos y estado persistente del usuario",
+    "styles": "CSS normal por componente o styles.css global; no usar librerías visuales que cambien el diseño base",
+    "catalog_api": "Fake Store API: GET https://fakestoreapi.com/products, GET https://fakestoreapi.com/products/categories y filtros por categoría, con mapper a Product."
+  },
+  "design_system": {
+    "palette": {
+      "wine": "#6c2949",
+      "plum": "#32192f",
+      "beige": "#f5ecdf",
+      "cream": "#fffaf2",
+      "gold": "#e4ba78",
+      "ink": "#2b1827",
+      "muted": "#8f6c76"
+    },
+    "fonts": ["DM Sans", "DM Mono", "Playfair Display"],
+    "visual_direction": "Editorial, coleccionista, anime elegante. Fondos vino/morado, superficies beige, botones dorados, tipografía Playfair para títulos y DM Mono para microetiquetas. Prioriza una sensación premium y antigua pero moderna.",
+    "animations": [
+      "Entrada rise: opacidad 0 y translateY(14px) hacia opacidad 1.",
+      "Float: traslación vertical suave de 10px para figuras principales.",
+      "Hover en ProductCard: translateY(-6px) y sombra suave.",
+      "Las animaciones deben respetar prefers-reduced-motion."
+    ],
+    "layout": {
+      "desktop": "grid de 4 columnas en catalogo principal y vistas de producto destacadas",
+      "tablet": "grid de 2 columnas",
+      "mobile": "grid de 2 columnas, navegador tipo hamburguesa y drawer del carrito full width",
+      "cart_position": "El carrito debe mostrarse fijo en la parte superior derecha, como botón flotante con contador, y abrir un drawer lateral al hacer clic.",
+      "cart_independence": "El carrito es un componente global y no forma parte del contenido de Catalogo, Novedades, Colecciones, Nosotros ni Home; debe permanecer visible y accesible en todas las rutas mientras la aplicación se navega.",
+      "spacing": "márgenes amplios y rhythm consistente, sin saturar la UI"
+    }
+  },
+  "routes": [
+    {"path": "", "component": "HomeComponent", "purpose": "Hero, beneficios, cuatro productos destacados y CTA hacia catálogo."},
+    {"path": "catalogo", "component": "CatalogComponent", "purpose": "Listado de productos, filtros, búsqueda, orden y vista de catálogo completo."},
+    {"path": "novedades", "component": "NewReleasesComponent", "purpose": "Productos destacados, badges de novedad y ofertas con estilo editorial."},
+    {"path": "colecciones", "component": "CollectionsComponent", "purpose": "Tarjetas por universo anime que llevan al catálogo filtrado y a la colección."},
+    {"path": "nosotros", "component": "AboutComponent", "purpose": "Historia de Collecto, métricas y posicionamiento de marca."},
+    {"path": "checkout", "component": "CheckoutComponent", "purpose": "Resumen de compra, formulario de entrega y pago Stripe real."}
+  ],
+  "components": [
+    "AppShellComponent: topbar, navbar responsive, router-outlet, footer y botón global de carrito.",
+    "ProductCardComponent: tarjeta reutilizable de figura con badge, favorito, precio, valoración, stock y botón Añadir al carrito.",
+    "CartDrawerComponent: panel lateral que permite ver productos, sumar, restar, eliminar, seguir comprando e ir al checkout.",
+    "HeroComponent: hero anime con figura CSS, orbes, badges y CTA hacia catálogo.",
+    "ProductGridComponent: cuadrícula reutilizable para inicio, catálogo y novedades.",
+    "CheckoutComponent: resumen de ítems, subtotal, envío, total, datos de entrega y Payment Element de Stripe.",
+    "StripePaymentComponent: encapsula Stripe Elements/Payment Element, estados de carga, errores y confirmación de pago.",
+    "FilterBarComponent: opcional pero recomendable para búsqueda y filtros por categoría, universo y novedad.",
+    "EmptyStateComponent: opcional para catálogo vacío o carrito vacío."
+  ],
+  "models": {
+    "Product": "interface Product { id: number; name: string; universe: string; price: number; category: string; color: string; accent: string; art: string; badge?: string; rating: string; stock: number; description?: string; image?: string; }",
+    "CartLine": "interface CartLine extends Product { qty: number; }",
+    "CheckoutForm": "interface CheckoutForm { fullName: string; email: string; address: string; city: string; country?: string; }",
+    "PaymentIntentResponse": "interface PaymentIntentResponse { clientSecret: string; orderId: string; amount: number; currency: string; status: string; }",
+    "Order": "interface Order { id: string; status: 'pending' | 'paid' | 'failed'; total: number; currency: string; items: Array<{ productId: number; qty: number; unitPrice: number }> }",
+    "FakeStoreProduct": "interface FakeStoreProduct { id: number; title: string; price: number; description: string; category: string; image: string; rating: { rate: number; count: number }; }"
+  },
+  "catalog_data": {
+    "source": "https://fakestoreapi.com/products",
+    "description": "Fuente principal de catálogo. Se consume desde Angular con HttpClient y se mapea a un modelo Product compatible con la UI.",
+    "sample_response": {
+      "id": 1,
+      "title": "Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops",
+      "price": 109.95,
+      "description": "Your perfect pack for everyday use and walks in the forest.",
+      "category": "men's clothing",
+      "image": "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_.jpg",
+      "rating": { "rate": 3.9, "count": 120 }
+    },
+    "mapping": [
+      "id → id",
+      "title → name",
+      "price → price",
+      "category → category",
+      "image → art",
+      "description → description",
+      "rating.rate → rating",
+      "rating.count → ratingCount (opcional)",
+      "color/accent → generados por el frontend con paleta visual del proyecto"
+    ]
+  },
+  "frontend_logic": {
+    "CatalogService": "Expone productos como Observable<Product[]> y métodos para filtrar por búsqueda, categoría, universo, novedad y orden. Debe hacer GET a https://fakestoreapi.com/products y mapear el payload a Product usando interfaces del frontend.",
+    "CartService": [
+      "Usa BehaviorSubject<CartLine[]> como fuente única del carrito.",
+      "add(product): si el id existe aumenta qty; si no, agrega qty = 1.",
+      "updateQty(id, qty): elimina si qty es menor a 1; si no actualiza sin mutar el arreglo.",
+      "remove(id), clear(), subtotal(), itemCount(), shippingCost() y totals() deben devolver valores consistentes.",
+      "Persiste cart y favorites en localStorage; lee sus valores al iniciar la app."
+    ],
+    "FavoritesService": "Guarda Product.id favoritos en localStorage y expone toggle(id), isFavorite(id) y getAll().",
+    "checkout_totals": "Subtotal = suma(price * qty). Envío es $0 desde $250.000 COP y $15.000 COP debajo de ese monto. El frontend lo muestra, pero el backend lo vuelve a calcular para evitar confianza en el navegador.",
+    "responsive": "Navbar hamburguesa menor a 590px; cuadrícula de 4, 2 y 2 columnas para escritorio, tablet y móvil respectivamente; drawer de carrito ocupa 100% en celular."
+  },
+  "stripe_backend": {
+    "environment_variables": [
+      "STRIPE_SECRET_KEY=sk_test_...",
+      "STRIPE_WEBHOOK_SECRET=whsec_...",
+      "CLIENT_URL=http://localhost:4200",
+      "PORT=3000",
+      "NODE_ENV=development"
+    ],
+    "api_endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/payments/create-intent",
+        "request_body": "{ items: [{ productId: number, qty: number }], customer: { fullName, email, address, city } }",
+        "server_logic": [
+          "Valida que el cuerpo sea correcto y que todos los ids existan.",
+          "Valida cantidades, stock, longitudes mínimas y email.",
+          "Busca precios y stock en el catálogo del servidor.",
+          "Calcula subtotal, envío y total en COP usando el backend como fuente definitiva.",
+          "Crea una orden con estado pending y la guarda con detalle de productos.",
+          "Crea stripe.paymentIntents.create({ amount: total, currency: 'cop', automatic_payment_methods: { enabled: true }, metadata: { orderId } }).",
+          "Devuelve clientSecret, orderId, amount y currency."
+        ],
+        "response_example": "{ clientSecret: 'pi_xxx_secret_xxx', orderId: 'ord_123', amount: 189900, currency: 'cop', status: 'pending' }"
+      },
+      {
+        "method": "POST",
+        "path": "/api/stripe/webhook",
+        "server_logic": [
+          "Usa express.raw({ type: 'application/json' }) solamente para esta ruta antes de express.json().",
+          "Verifica stripe.webhooks.constructEvent con STRIPE_WEBHOOK_SECRET.",
+          "Acepta eventos: payment_intent.succeeded, payment_intent.payment_failed, charge.failed y checkout.session.completed cuando aplique.",
+          "En payment_intent.succeeded cambia la orden a paid y descuenta stock en servidor.",
+          "En payment_intent.payment_failed cambia la orden a failed y libera la sesión si es necesario.",
+          "Responde HTTP 200 de inmediato después de procesar el evento."
+        ]
+      },
+      {
+        "method": "GET",
+        "path": "/api/orders/:orderId",
+        "server_logic": "Devuelve el estado de la orden para mostrar confirmación al cliente y permitir polling durante la confirmación del pago."
+      }
+    ],
+    "security_rules": [
+      "Usar Stripe keys de prueba durante desarrollo.",
+      "Guardar las claves en .env, agregar .env a .gitignore y crear .env.example sin secretos.",
+      "Nunca enviar la clave secreta, precio de confianza o estado paid desde Angular.",
+      "El webhook es la fuente de verdad del pago.",
+      "Validar CORS para permitir únicamente el origen Angular local.",
+      "Validar cantidades máximas, stock, datos de formulario y evitar manipulación del frontend.",
+      "Nunca loguear datos sensibles como tarjeta, secretos o payloads del cliente."
+    ]
+  },
+  "stripe_frontend": {
+    "packages": ["@stripe/stripe-js"],
+    "environment": "environment.ts debe contener únicamente stripePublishableKey: 'pk_test_...' y apiUrl. La publishable key sí puede estar en el frontend.",
+    "flow": [
+      "Al abrir Checkout, usar Reactive Forms para validar nombre, correo, dirección y ciudad.",
+      "Al enviar datos válidos, llamar POST /api/payments/create-intent con ids y cantidades, sin enviar precios finales ni secret keys.",
+      "Montar Stripe Payment Element con el clientSecret que entrega el servidor.",
+      "Confirmar el pago usando Stripe.js y mostrar estado processing mientras responde.",
+      "Tras confirmación exitosa, consultar GET /api/orders/:orderId hasta que el webhook confirme paid, luego vaciar el carrito.",
+      "Si falla, conservar el carrito y mostrar el mensaje de Stripe con un error claro y accionable.",
+      "En caso de cancelación o error, permitir reintentar sin perder el contenido del carrito."
+    ]
+  },
+  "implementation_plan": [
+    "Fase 1: Bootstrap del proyecto Angular y del backend Express con estructura escalable.",
+    "Fase 2: Reproducción del catálogo, state del carrito/favoritos y styling de la tienda.",
+    "Fase 3: Checkout UI con validación, resumen, totals y comunicación con el backend.",
+    "Fase 4: Integración real de Stripe, webhook y confirmación final.",
+    "Fase 5: QA visual, responsive, pruebas unitarias y limpieza final.",
+    "Fase 6: README, variables de entorno, pasos para Stripe CLI y validación en entorno local."
+  ],
+  "implementation_guidelines": [
+    "Usa una arquitectura por capas: modelos, servicios, componentes compartidos y vistas por feature.",
+    "Crea un catálogo de referencia en el backend para que precios y stock se gestionen desde un único origen de verdad. Si usas Fake Store como fuente del catálogo, mapea el resultado y asigna valores de stock ficticio para el flujo de compra local.",
+    "Haz que el frontend solo muestre y envíe datos; no haga cálculos de pricing críticos ni ejecute pagos en el navegador.",
+    "Mantén servicios con BehaviorSubject, signals o RxJS bien estructurados y documentados.",
+    "Usa Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }) para mostrar dinero colombiano.",
+    "Para Fake Store, usa HttpClient.get<FakeStoreProduct[]>('https://fakestoreapi.com/products') y luego transforma title→name, price, category, image→art, rating.rate→rating. No dependas de la respuesta original sin normalizarla.",
+    "Incluye manejo de loading, disabled states y mensajes amigables para usuarios ajenos a Stripe.",
+    "Usa interfaces y tipado fuerte para evitar errores de payloads entre Angular y backend."
+  ],
+  "required_files": [
+    "src/app/core/models/product.model.ts",
+    "src/app/core/models/cart-line.model.ts",
+    "src/app/core/models/order.model.ts",
+    "src/app/core/services/catalog.service.ts",
+    "src/app/core/services/cart.service.ts",
+    "src/app/core/services/favorites.service.ts",
+    "src/app/core/services/payment.service.ts",
+    "src/app/shared/product-card/product-card.component.ts",
+    "src/app/shared/cart-drawer/cart-drawer.component.ts",
+    "src/app/features/home/home.component.ts",
+    "src/app/features/catalog/catalog.component.ts",
+    "src/app/features/checkout/checkout.component.ts",
+    "src/styles.css",
+    "server/src/index.ts",
+    "server/src/catalog.ts",
+    "server/src/types.ts",
+    "server/.env.example",
+    "README.md"
+  ],
+  "acceptance_criteria": [
+    "Todas las rutas cargan sin recargar el navegador y el menú móvil funciona correctamente.",
+    "Añadir al carrito, quitar, aumentar y disminuir cambian contador, subtotal, envío y total correctamente.",
+    "El botón Seguir comprando cierra el drawer y navega a /catalogo sin borrar el carrito.",
+    "Carrito y favoritos sobreviven a un refresh del navegador.",
+    "El checkout muestra precios, envío y total en COP con Intl.NumberFormat.",
+    "No existen secretos Stripe ni claves privadas en el repositorio del frontend o del README real.",
+    "El backend recalcula total y el webhook determina el pago final, no el navegador.",
+    "La interfaz es usable a 375px de ancho y en escritorio sin romper el layout.",
+    "Incluye instrucciones de instalación, ejecución local, Stripe CLI y tarjeta de prueba 4242 4242 4242 4242 en README.md.",
+    "El catálogo se obtiene desde Fake Store API sin romper el flujo de compra ni la lógica de Stripe.",
+    "El proyecto compila sin errores, la prueba principal del carrito pasa y la aplicación está lista para correr localmente."
+  ],
+  "deliverables": [
+    "Código Angular completo y organizado.",
+    "Backend Express de Stripe separado del frontend.",
+    "Archivo .env.example sin credenciales reales.",
+    "README con comandos, variables, ejecución local, Stripe CLI para webhooks, prueba de compra y tarjeta de prueba 4242 4242 4242 4242.",
+    "Pruebas unitarias mínimas para CartService y cálculo de totales."
+  ],
+  "quality_bar": [
+    "Código limpio, sin duplicación innecesaria y con nombres descriptivos.",
+    "No dejar TODOs abiertos ni placeholders de pago sin backend.",
+    "Mantener consistencia visual con la referencia original.",
+    "Validar el flujo completo con un pago de prueba real usando Stripe CLI."
+  ]
+}

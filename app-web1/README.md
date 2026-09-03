@@ -1,59 +1,29 @@
-# AppWeb1
+# Collecto
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.4.
+Tienda Angular de figuras de anime con catálogo, favoritos, carrito persistente y checkout seguro con Stripe.
 
-## Development server
-
-To start a local development server, run:
+## Ejecutar
 
 ```bash
-ng serve
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+La app queda en `http://localhost:4200`.
 
-## Code scaffolding
+## Configurar Stripe (modo de prueba)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+1. Copia `server/.env.example` como `server/.env` y configura `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` y la clave publicable en `src/environments/environment.ts`.
+2. En otra terminal inicia la API: `npm run start:api`.
+3. Reenvía los webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`. Copia el secreto `whsec_...` que imprime Stripe CLI a `server/.env`.
+
+Usa la tarjeta de prueba `4242 4242 4242 4242`, una fecha futura y cualquier CVC/código postal válido.
+
+El navegador solo envía identificadores y cantidades. El servidor recupera el catálogo, recalcula subtotal/envío/total y el webhook de Stripe es quien confirma el estado `paid`; no hay claves privadas en Angular.
+
+## Verificación
 
 ```bash
-ng generate component component-name
+npm run build
+npm test
 ```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

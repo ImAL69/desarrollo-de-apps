@@ -1,0 +1,234 @@
+GUÍA TÉCNICA DE TYPESCRIPT — COLLECTO
+======================================
+
+Esta guía explica el código de la tienda desde el punto de vista de React y
+TypeScript. Está pensada para usarla como apoyo de estudio, no solo como una
+lista de definiciones.
+
+1. ¿QUÉ TECNOLOGÍAS HAY EN EL PROYECTO?
+---------------------------------------
+- TypeScript: añade tipos a JavaScript para detectar errores antes de ejecutar.
+- React: crea la interfaz a partir de componentes y estados.
+- Ionic React: aporta componentes preparados para aplicaciones web/móviles.
+- ionicons: contiene los iconos usados en botones, como carrito, corazón y +.
+- CSS: se encarga del diseño, colores, animaciones y responsive.
+
+El archivo principal es src/App.tsx. La apariencia está en src/store.css.
+
+2. IMPORTS: QUÉ SON Y PARA QUÉ SIRVEN
+-------------------------------------
+Al principio de App.tsx se encuentran importaciones parecidas a estas:
+
+  import { useEffect, useMemo, useState } from 'react';
+
+Esto trae funciones que React ya ofrece:
+
+- useState: guarda información que puede cambiar en pantalla. Al cambiar, React
+  vuelve a renderizar la parte necesaria de la interfaz.
+- useEffect: ejecuta una acción cuando un estado cambia. Aquí se usa para guardar
+  carrito y favoritos en localStorage.
+- useMemo: memoriza un cálculo. Aquí evita filtrar los productos otra vez si ni
+  la categoría ni el texto de búsqueda cambiaron.
+
+También se importa IonApp e IonIcon desde '@ionic/react'. IonApp es el
+contenedor base de la aplicación Ionic e IonIcon dibuja un icono.
+
+Los iconos se importan desde 'ionicons/icons':
+
+  import { bagHandleOutline, heartOutline, addOutline } from 'ionicons/icons';
+
+Cada nombre representa un icono. Luego se usa, por ejemplo, así:
+
+  <IonIcon icon={bagHandleOutline} />
+
+¿Dónde buscar para importar?
+
+- Paquetes ya instalados: revisar package.json, sección "dependencies".
+- Iconos Ionic: buscar "Ionicons icons" en la documentación oficial o en
+  node_modules/ionicons/icons si se desea inspeccionar localmente.
+- Componentes de Ionic: buscar "Ionic React components" en la documentación
+  oficial. La mayoría se importan desde '@ionic/react'.
+- Paquetes de npm: buscar en npmjs.com. Para instalarlos se suele usar
+  npm install nombre-del-paquete, pero conviene comprobar primero si de verdad
+  hacen falta y si son compatibles con React/TypeScript.
+
+3. EL TIPO Product
+------------------
+En el código aparece esta declaración:
+
+  type Product = {
+    id: number;
+    name: string;
+    universe: string;
+    price: number;
+    category: string;
+    color: string;
+    accent: string;
+    art: string;
+    badge?: string;
+    rating: string;
+  };
+
+Un "type" define cómo debe ser un objeto. TypeScript revisa que cada producto
+tenga los datos correctos antes de compilar. Por ejemplo, price debe ser un
+número y name debe ser texto.
+
+SIGNIFICADO DE CADA PROPIEDAD
+
+- id: identificador único. Es fundamental para encontrar, sumar, quitar y
+  renderizar un producto sin confundirlo con otro.
+- name: nombre del personaje o figura.
+- universe: franquicia a la que pertenece; se muestra como texto secundario.
+- price: precio numérico en pesos colombianos. Se conserva como número para
+  poder sumarlo y multiplicarlo; solo se convierte a formato de moneda al
+  mostrarlo.
+- category: grupo usado por los filtros (Piratas, Ninjas, Cazadores, etc.).
+- color: color base de la tarjeta de la figura. Se entrega al CSS como la
+  variable --base.
+- accent: color de contraste de la mini-figura CSS. Se entrega como --accent.
+  Normalmente sirve para la cabeza/cuerpo de la figura y hace que cada tarjeta
+  tenga su propia combinación visual.
+- art: carácter decorativo que representa la figura (por ejemplo ◉, ✦ o ◆).
+  No es una imagen real: es texto decorativo dentro de la figura creada con CSS.
+- badge?: etiqueta opcional como NUEVO, PREVENTA o -15%. El signo ? indica que
+  puede no existir. Si no existe, TypeScript permite omitirla y React no dibuja
+  la etiqueta gracias a la condición {product.badge && ...}.
+- rating: valoración mostrada al usuario. En este proyecto es texto porque se
+  presenta tal cual ("4.9"); si fuera necesario calcular promedios, convendría
+  cambiarlo por number.
+
+4. CartLine: PRODUCTO MÁS CANTIDAD
+----------------------------------
+
+  type CartLine = Product & { qty: number };
+
+El símbolo & significa "combinar tipos". Una línea del carrito tiene todas las
+propiedades de Product y, además, qty. qty indica cuántas unidades de esa figura
+hay en el carrito. Esta es una forma limpia de no repetir las propiedades de
+Product una por una.
+
+5. EL ARREGLO products
+----------------------
+products es un arreglo de Product:
+
+  const products: Product[] = [ ... ];
+
+Product[] se lee como "arreglo de productos". Si al crear una figura se pone
+price: '100000' entre comillas, TypeScript marcaría el error porque espera un
+número. Esto reduce fallos antes de abrir la página.
+
+6. ESTADOS PRINCIPALES (useState)
+---------------------------------
+- cart: CartLine[]. Guarda el carrito completo.
+- favorites: number[]. Guarda solamente los id de las figuras favoritas.
+- category: string. Guarda el filtro activo.
+- query: string. Guarda el texto escrito en el buscador.
+- cartOpen: boolean. Define si el panel lateral del carrito se ve o no.
+- checkout: boolean. Define si se muestra la ventana "Ir a comprar".
+- paymentMessage: boolean. Controla el aviso de que el pago no es real.
+- menuOpen: boolean. Abre/cierra el menú en celulares.
+- page: string. Decide qué vista se muestra: inicio, catálogo, novedades,
+  colecciones o nosotros.
+
+Un boolean solo puede ser true o false. Es ideal para modales, paneles,
+interruptores y mensajes temporales.
+
+7. FUNCIONES MÁS IMPORTANTES
+----------------------------
+
+money(numero)
+  Recibe un número y usa Intl.NumberFormat para mostrarlo como COP. Separar
+  esta lógica evita repetir la conversión de precios por toda la aplicación.
+
+addCart(producto)
+  Revisa si ya existe una figura con el mismo id. Si existe, aumenta qty. Si no,
+  agrega el producto junto con qty: 1. Al final abre el carrito. Usa setCart con
+  una función (old => ...) porque el nuevo estado depende del estado anterior.
+
+updateQty(id, cantidad)
+  Si cantidad es menor que uno, elimina la línea usando filter. Si es válida,
+  usa map para devolver un arreglo actualizado cambiando solamente la figura
+  cuyo id coincide. Nunca modifica el arreglo original directamente.
+
+toggleFav(id)
+  Si el id está en favorites, lo elimina. Si no está, lo agrega. Es un patrón
+  común para botones de activar/desactivar.
+
+go(destino)
+  Cambia la vista con setPage, cierra el menú móvil y hace scroll suave hacia el
+  inicio. Así las secciones funcionan como páginas dentro de una SPA.
+
+productGrid(items)
+  Es una función que retorna las tarjetas de producto. Se reutiliza en Inicio,
+  Catálogo y Novedades. Reutilizar evita copiar el mismo JSX tres veces.
+
+8. FUNCIONES DE ARREGLOS QUE CONVIENE DOMINAR
+---------------------------------------------
+- map: transforma cada elemento y devuelve otro arreglo. Se usa para crear una
+  tarjeta por cada producto y para modificar cantidades sin mutar datos.
+- filter: conserva solo elementos que cumplen una condición. Se usa al buscar,
+  filtrar por categoría y quitar artículos.
+- find: devuelve el primer elemento que coincide. Se usa para saber si una
+  figura ya está en el carrito.
+- includes: pregunta si un elemento existe. Se usa para favoritos.
+- reduce: reduce muchos valores a uno. subtotal suma price * qty de todas las
+  líneas del carrito.
+
+9. RENDERIZADO CONDICIONAL EN JSX
+---------------------------------
+JSX es la sintaxis HTML dentro de TypeScript/React. Una condición frecuente es:
+
+  {cart.length ? <Contenido /> : <CarritoVacio />}
+
+Si el carrito contiene elementos se muestra Contenido; de lo contrario se
+muestra CarritoVacio. Otra forma es:
+
+  {product.badge && <span>{product.badge}</span>}
+
+Solo se dibuja el span cuando badge tiene valor. Es una forma breve y segura de
+trabajar con propiedades opcionales.
+
+10. PERSISTENCIA CON localStorage
+---------------------------------
+localStorage guarda texto en el navegador. En este proyecto se usa JSON para
+guardar arreglos:
+
+  localStorage.setItem('collecto-cart', JSON.stringify(cart))
+
+JSON.stringify convierte el arreglo a texto. Al cargar la app:
+
+  JSON.parse(localStorage.getItem('collecto-cart') || '[]')
+
+lo convierte de nuevo a arreglo. El || '[]' evita un error si todavía no hay
+carrito guardado. Importante: localStorage no reemplaza una base de datos y no
+debe usarse para guardar contraseñas ni datos bancarios.
+
+11. CSS PERSONALIZADO CON VARIABLES
+-----------------------------------
+Las tarjetas pasan sus colores así:
+
+  style={{ '--base': product.color, '--accent': product.accent } as React.CSSProperties}
+
+--base y --accent son variables CSS. El "as React.CSSProperties" le indica a
+TypeScript que ese objeto de estilos es válido; TypeScript no reconoce por sí
+solo variables CSS personalizadas que empiezan con --. En store.css se usan con
+var(--base) y var(--accent).
+
+12. IDEAS PARA MEJORAR EL PROYECTO CON TYPESCRIPT
+-------------------------------------------------
+- Crear un tipo Page = 'inicio' | 'catalogo' | 'novedades' | 'colecciones' |
+  'nosotros'. Así TypeScript impediría llamar go('pagina-inexistente').
+- Cambiar rating a number si se van a calcular promedios o ordenar figuras.
+- Crear componentes separados: ProductCard.tsx, Cart.tsx y Checkout.tsx, y
+  pasarles props tipadas. Reduciría el tamaño de App.tsx.
+- Crear interfaces para formularios de checkout y validar campos antes de usar
+  un backend.
+- Añadir stock: number a Product y deshabilitar el botón si stock es 0.
+- Usar rutas reales con react-router si las vistas necesitan tener URL propia.
+
+13. REGLA DE ORO
+----------------
+En TypeScript intenta modelar los datos antes de programar la interfaz. Si el
+tipo representa bien el problema (producto, línea de carrito, pedido), las
+funciones se vuelven más pequeñas, el autocompletado mejora y aparecen menos
+errores inesperados.
