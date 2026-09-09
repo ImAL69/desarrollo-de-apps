@@ -1,0 +1,105 @@
+DOCUMENTACION DE LA INSTALACION DE @capacitor/camera
+=====================================================
+
+Fecha:
+2026-09-09
+
+Proyecto:
+ionic-agular
+
+Ubicacion:
+C:\Users\AL\Desktop\universidad\fet 6 semestre\desarrollo-de-apps\ionic-agular
+
+1. Solicitud realizada
+----------------------
+
+Instalar el plugin de Capacitor para acceder a la camara:
+
+    npm install @capacitor/camera
+
+Despues, sincronizar los plugins y archivos nativos:
+
+    npx cap sync
+
+2. Primer intento
+-----------------
+
+Se ejecuto:
+
+    npm install @capacitor/camera
+
+La instalacion no pudo resolver las dependencias porque el proyecto ya
+tenia versiones incompatibles de Angular:
+
+- @angular/core: 22.0.1
+- @angular/compiler: 22.0.1
+- @angular/common: ^22.1.5
+- @angular/forms: ^22.1.5
+- @angular/platform-browser: ^22.1.5
+- @angular/router: ^22.1.5
+
+NPM reporto el error ERESOLVE debido a que varios paquetes de Angular
+22.1.5 requieren @angular/core 22.1.5, mientras el proyecto mantiene
+@angular/core 22.0.1.
+
+Este conflicto era previo a la instalacion de la camara.
+
+3. Solucion aplicada
+--------------------
+
+Se repitio la instalacion aceptando los peer dependencies existentes:
+
+    npm install @capacitor/camera --legacy-peer-deps
+
+Resultado:
+
+- Se agrego un paquete.
+- La auditoria finalizo sin vulnerabilidades.
+- Se agrego @capacitor/camera en package.json como:
+
+      "@capacitor/camera": "^8.2.4"
+
+- package-lock.json fue actualizado.
+
+4. Sincronizacion de Capacitor
+------------------------------
+
+Despues de instalar el plugin se ejecuto:
+
+    npx cap sync
+
+La sincronizacion finalizo correctamente. Se copiaron los archivos web,
+se actualizo Android y se actualizaron los plugins de Capacitor.
+
+Plugins detectados para Android:
+
+- @capacitor/app@8.1.1
+- @capacitor/camera@8.2.4
+- @capacitor/haptics@8.0.2
+- @capacitor/keyboard@8.0.5
+- @capacitor/status-bar@8.0.3
+
+5. Archivos afectados
+---------------------
+
+- package.json
+  Se agrego la dependencia @capacitor/camera.
+
+- package-lock.json
+  Se actualizo el bloqueo de dependencias y la informacion del nuevo
+  paquete instalado.
+
+- android/
+  Capacitor sincronizo los archivos nativos de Android, incluyendo el
+  registro del plugin de la camara.
+
+6. Resultado final
+------------------
+
+La instalacion de @capacitor/camera quedo completada y Capacitor quedo
+sincronizado correctamente para Android y Web.
+
+Comando efectivo utilizado:
+
+    npm install @capacitor/camera --legacy-peer-deps
+    npx cap sync
