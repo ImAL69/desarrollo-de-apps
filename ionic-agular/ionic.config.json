@@ -1,0 +1,7 @@
+{
+  "name": "ionic-agular",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
