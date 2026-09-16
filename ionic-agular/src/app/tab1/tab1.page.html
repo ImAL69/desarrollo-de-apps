@@ -18,7 +18,7 @@
         <h2>Dark Mode</h2>
         <p>Cambia la apariencia de la aplicación</p>
       </ion-label>
-      <ion-toggle slot="end" aria-label="Activar modo oscuro" (ionChange)="toggleDarkMode($event)"></ion-toggle>
+      <ion-toggle slot="end" aria-label="Activar modo oscuro" [checked]="isDarkMode" (ionChange)="toggleDarkMode($event)"></ion-toggle>
     </ion-item>
 
     <ion-item button detail="true"><ion-icon slot="start" name="albums" color="primary"></ion-icon><ion-label>Accordion</ion-label></ion-item>
