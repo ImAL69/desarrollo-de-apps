@@ -1,0 +1,60 @@
+EXPLICACION DE LA APP IONIC ANGULAR
+===================================
+
+Descripcion
+-----------
+Se personalizo el proyecto Ionic Angular inicial para crear una aplicacion con
+tres pestañas:
+
+1. Componentes: catalogo visual inspirado en la lista de componentes de Ionic.
+2. Calculadora: calculadora funcional ubicada en la segunda pestaña.
+3. Info: pestaña conservada para ampliar la aplicacion posteriormente.
+
+Componentes Ionic utilizados
+----------------------------
+- ion-tabs, ion-tab-bar e ion-tab-button: navegacion entre las pestañas.
+- ion-header, ion-toolbar e ion-title: encabezado de cada pantalla.
+- ion-content: area principal con desplazamiento.
+- ion-list e ion-item: lista de componentes con estilo de Ionic.
+- ion-icon: iconos de cada elemento de la lista.
+- ion-label: textos y descripciones.
+- ion-toggle: interruptor para activar o desactivar el modo oscuro.
+- ion-grid, ion-row e ion-col: distribucion de los botones de la calculadora.
+- ion-button: teclas numericas, operaciones y acciones.
+- ion-text: salida del resultado.
+
+Como se implemento
+-------------------
+La primera pestaña contiene un arreglo TypeScript con los nombres e iconos de
+los componentes. La plantilla usa @for para generar los ion-item sin repetir
+HTML. Cada elemento tiene button y detail para conservar la flecha visual de
+la referencia.
+
+El interruptor llama a toggleDarkMode(). Este metodo agrega o elimina la clase
+dark en document.body. Tambien se habilito la paleta dark.class.css de Ionic
+en global.scss para que los colores del tema se adapten correctamente.
+
+La calculadora mantiene el numero mostrado, el primer valor, el operador y si
+debe comenzar un nuevo numero. Permite suma, resta, multiplicacion, division,
+porcentaje, cambio de signo, decimales, borrar y resultado. La division entre
+cero muestra un mensaje explicito en lugar de producir un resultado invalido.
+
+Archivos principales modificados
+---------------------------------
+- src/app/tab1/tab1.page.html: catalogo de componentes.
+- src/app/tab1/tab1.page.ts: datos de la lista y modo oscuro.
+- src/app/tab1/tab1.page.scss: estilos del catalogo.
+- src/app/tab2/tab2.page.html: interfaz de la calculadora.
+- src/app/tab2/tab2.page.ts: logica de operaciones.
+- src/app/tab2/tab2.page.scss: estilos responsive de la calculadora.
+- src/app/tabs/tabs.page.html: nombres visibles de las pestañas.
+- src/global.scss: habilitacion del tema oscuro por clase.
+
+Para ejecutar
+--------------
+Desde la carpeta ionic-agular:
+
+  npm install
+  npm start
+
+Luego se puede abrir la URL indicada por Angular en el navegador.

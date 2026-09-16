@@ -1,17 +1,34 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      Tab 1
-    </ion-title>
+    <ion-title>Ionic Framework</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 1</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <div class="page-intro">
+    <p class="eyebrow">Componentes de interfaz</p>
+    <h1>Explora Ionic</h1>
+    <p>Una colección de componentes listos para crear aplicaciones modernas.</p>
+  </div>
 
-  <app-explore-container name="Tab 1 page"></app-explore-container>
+  <ion-list inset="true">
+    <ion-item>
+      <ion-icon slot="start" name="moon" color="primary"></ion-icon>
+      <ion-label>
+        <h2>Dark Mode</h2>
+        <p>Cambia la apariencia de la aplicación</p>
+      </ion-label>
+      <ion-toggle slot="end" aria-label="Activar modo oscuro" (ionChange)="toggleDarkMode($event)"></ion-toggle>
+    </ion-item>
+
+    <ion-item button detail="true"><ion-icon slot="start" name="albums" color="primary"></ion-icon><ion-label>Accordion</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="list" color="primary"></ion-icon><ion-label>Action Sheet</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="alert-circle" color="primary"></ion-icon><ion-label>Alert</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="person" color="primary"></ion-icon><ion-label>Avatar</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="pricetag" color="primary"></ion-icon><ion-label>Badge</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="return-down-forward" color="primary"></ion-icon><ion-label>Breadcrumbs</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="play" color="primary"></ion-icon><ion-label>Button</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="card" color="primary"></ion-icon><ion-label>Card</ion-label></ion-item>
+    <ion-item button detail="true"><ion-icon slot="start" name="checkbox" color="primary"></ion-icon><ion-label>Checkbox</ion-label></ion-item>
+  </ion-list>
 </ion-content>
