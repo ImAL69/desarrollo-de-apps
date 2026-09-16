@@ -25,17 +25,19 @@ Componentes Ionic utilizados
 
 Como se implemento
 -------------------
-La primera pestaña contiene un arreglo TypeScript con los nombres e iconos de
-los componentes. La plantilla usa @for para generar los ion-item sin repetir
-HTML. Cada elemento tiene button y detail para conservar la flecha visual de
-la referencia.
+La primera pestaña usa elementos ion-item con button y detail para conservar
+la flecha visual de la referencia. Cada elemento incluye su ion-icon e
+ion-label correspondiente.
 
 El interruptor llama a toggleDarkMode(). ThemeService agrega o elimina las
-clases dark e ion-palette-dark en document.body. La primera sigue el ejemplo
-de la guia y la segunda activa la paleta dark.class.css de Ionic. La preferencia
-se guarda en localStorage y se restaura al iniciar la aplicacion, por lo que el
-tema se mantiene al cambiar de pestaña o recargar. Se retiro dark.system.css
-para que el tema del sistema operativo no contradiga el estado elegido.
+clases dark e ion-palette-dark tanto en document.documentElement (html) como
+en document.body. La primera sigue el ejemplo de la guia y la segunda activa
+la paleta dark.class.css de Ionic. Ademas, global.scss define explicitamente
+el fondo #121212, texto blanco, toolbar, tab bar e items oscuros para que el
+cambio sea visible en toda la aplicacion. La preferencia se guarda en
+localStorage y se restaura al iniciar, por lo que el tema se mantiene al
+cambiar de pestaña o recargar. Se retiro dark.system.css para que el tema del
+sistema operativo no contradiga el estado elegido.
 
 La calculadora mantiene el numero mostrado, el primer valor, el operador y si
 debe comenzar un nuevo numero. Permite suma, resta, multiplicacion, division,
@@ -51,7 +53,10 @@ Archivos principales modificados
 - src/app/tab2/tab2.page.ts: logica de operaciones.
 - src/app/tab2/tab2.page.scss: estilos responsive de la calculadora.
 - src/app/tabs/tabs.page.html: nombres visibles de las pestañas.
-- src/global.scss: habilitacion del tema oscuro por clase.
+- src/app/app.component.ts: inicializacion global del tema.
+- src/app/theme.service.ts: estado, clases y persistencia del modo oscuro.
+- src/global.scss: paleta y colores globales de modo oscuro.
+- EXPLICACION-APP.txt: documentacion de la implementacion.
 
 Para ejecutar
 --------------
