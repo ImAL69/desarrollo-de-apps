@@ -16,6 +16,8 @@ export class ThemeService {
 
   setDarkMode(enabled: boolean, persist = true): void {
     this.darkMode = enabled;
+    // Keep the guide's `dark` class and Ionic's palette class in sync.
+    document.body.classList.toggle('dark', enabled);
     document.body.classList.toggle('ion-palette-dark', enabled);
 
     if (persist) {

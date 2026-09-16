@@ -30,12 +30,12 @@ los componentes. La plantilla usa @for para generar los ion-item sin repetir
 HTML. Cada elemento tiene button y detail para conservar la flecha visual de
 la referencia.
 
-El interruptor llama a toggleDarkMode(). ThemeService agrega o elimina la clase
-ion-palette-dark en document.body, que es la clase que realmente utiliza la
-paleta dark.class.css de Ionic. La preferencia se guarda en localStorage y se
-restaura al iniciar la aplicacion, por lo que el tema se mantiene al cambiar
-de pestaña o recargar. Se retiro dark.system.css para que el tema del sistema
-operativo no contradiga el estado elegido por el usuario.
+El interruptor llama a toggleDarkMode(). ThemeService agrega o elimina las
+clases dark e ion-palette-dark en document.body. La primera sigue el ejemplo
+de la guia y la segunda activa la paleta dark.class.css de Ionic. La preferencia
+se guarda en localStorage y se restaura al iniciar la aplicacion, por lo que el
+tema se mantiene al cambiar de pestaña o recargar. Se retiro dark.system.css
+para que el tema del sistema operativo no contradiga el estado elegido.
 
 La calculadora mantiene el numero mostrado, el primer valor, el operador y si
 debe comenzar un nuevo numero. Permite suma, resta, multiplicacion, division,
