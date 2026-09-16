@@ -13,7 +13,17 @@ export class Tab2Page {
   private operator: string | null = null;
   private waitingForValue = false;
 
+  private isErrorState(): boolean {
+    return this.display === 'No se puede dividir entre 0';
+  }
+
   input(value: string): void {
+    if (this.isErrorState()) {
+      this.display = value === '.' ? '0.' : value;
+      this.waitingForValue = false;
+      return;
+    }
+
     if (this.waitingForValue || this.display === '0') {
       this.display = value;
       this.waitingForValue = false;
@@ -31,7 +41,7 @@ export class Tab2Page {
   }
 
   calculate(): void {
-    if (this.firstValue === null || !this.operator) return;
+    if (this.firstValue === null || !this.operator || this.isErrorState()) return;
     const secondValue = Number(this.display);
     let result: number;
     switch (this.operator) {
@@ -43,6 +53,7 @@ export class Tab2Page {
           this.display = 'No se puede dividir entre 0';
           this.firstValue = null;
           this.operator = null;
+          this.waitingForValue = false;
           return;
         }
         result = this.firstValue / secondValue;
@@ -63,11 +74,13 @@ export class Tab2Page {
   }
 
   toggleSign(): void {
-    if (this.display !== '0') this.display = this.display.startsWith('-') ? this.display.slice(1) : `-${this.display}`;
+    if (this.display !== '0' && !this.isErrorState()) {
+      this.display = this.display.startsWith('-') ? this.display.slice(1) : `-${this.display}`;
+    }
   }
 
   percent(): void {
+    if (this.isErrorState()) return;
     this.display = String(Number(this.display) / 100);
   }
-
 }

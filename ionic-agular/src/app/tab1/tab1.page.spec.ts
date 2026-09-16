@@ -15,4 +15,16 @@ describe('Tab1Page', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should render the component catalog and toggle dark mode', () => {
+    expect(component.components.length).toBeGreaterThan(0);
+
+    component.toggleDarkMode({ detail: { checked: true } } as CustomEvent<{ checked: boolean }>);
+    expect(document.body.classList.contains('dark')).toBeTruthy();
+    expect(document.documentElement.classList.contains('dark')).toBeTruthy();
+
+    component.toggleDarkMode({ detail: { checked: false } } as CustomEvent<{ checked: boolean }>);
+    expect(document.body.classList.contains('dark')).toBeFalsy();
+    expect(document.documentElement.classList.contains('dark')).toBeFalsy();
+  });
 });
