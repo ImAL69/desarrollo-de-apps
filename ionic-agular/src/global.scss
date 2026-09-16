@@ -1,3 +1,4 @@
+
 /*
  * App Global CSS
  * ----------------------------------------------------------------------------
@@ -35,8 +36,15 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 @import "@ionic/angular/css/palettes/dark.class.css";
 
+:root {
+  color-scheme: light;
+}
+
 html.dark,
-html.ion-palette-dark {
+html.ion-palette-dark,
+body.dark,
+body.ion-palette-dark {
+  color-scheme: dark;
   --ion-background-color: #121212;
   --ion-background-color-rgb: 18, 18, 18;
   --ion-text-color: #ffffff;
@@ -49,8 +57,6 @@ html.ion-palette-dark {
 
 html.dark ion-app,
 html.ion-palette-dark ion-app {
-  --ion-background-color: #121212;
-  --ion-text-color: #ffffff;
   background: #121212;
   color: #ffffff;
 }
