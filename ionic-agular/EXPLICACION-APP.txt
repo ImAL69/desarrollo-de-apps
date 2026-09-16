@@ -67,3 +67,19 @@ Desde la carpeta ionic-agular:
   npm start
 
 Luego se puede abrir la URL indicada por Angular en el navegador.
+
+Para ejecutar en un telefono Android
+-------------------------------------
+El comando debe ejecutarse desde la carpeta ionic-agular, no desde
+ionic-agular/android. El lanzador siguiente corrige la carpeta de trabajo,
+inicia ADB, selecciona un dispositivo autorizado y lo pasa a Capacitor:
+
+  npm run android:run
+
+Para comprobar los dispositivos detectados por ADB:
+
+  npm run android:devices
+
+Si el telefono aparece como unauthorized, hay que desbloquearlo y aceptar el
+dialogo de depuracion USB RSA. Tambien se puede usar depuracion inalambrica
+si ADB muestra el dispositivo como device.
