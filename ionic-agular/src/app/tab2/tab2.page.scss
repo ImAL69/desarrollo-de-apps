@@ -1,0 +1,50 @@
+.calculator {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 16px;
+}
+
+.calculator-heading .eyebrow {
+  margin: 0;
+  color: var(--ion-color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 8px 0 20px;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.display {
+  display: flex;
+  min-height: 100px;
+  align-items: end;
+  justify-content: end;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--ion-color-light);
+  padding: 20px;
+  color: var(--ion-text-color);
+  font-size: clamp(1.5rem, 8vw, 2.8rem);
+  font-weight: 700;
+  text-align: right;
+}
+
+ion-grid {
+  padding: 14px 0 0;
+}
+
+ion-col {
+  padding: 4px;
+}
+
+ion-button {
+  height: 58px;
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}

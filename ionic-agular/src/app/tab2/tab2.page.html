@@ -1,17 +1,46 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      Tab 2
-    </ion-title>
+    <ion-title>Calculadora</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 2</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
-  <app-explore-container name="Tab 2 page"></app-explore-container>
+  <main class="calculator">
+    <div class="calculator-heading">
+      <p class="eyebrow">Herramienta</p>
+      <h1>Calculadora</h1>
+    </div>
+    <div class="display" aria-live="polite"><ion-text>{{ display }}</ion-text></div>
+    <ion-grid>
+      <ion-row>
+        <ion-col><ion-button expand="block" fill="solid" color="medium" (click)="clear()">AC</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="solid" color="medium" (click)="toggleSign()">+/-</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="solid" color="medium" (click)="percent()">%</ion-button></ion-col>
+        <ion-col><ion-button expand="block" (click)="chooseOperator('÷')">÷</ion-button></ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('7')">7</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('8')">8</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('9')">9</ion-button></ion-col>
+        <ion-col><ion-button expand="block" (click)="chooseOperator('×')">×</ion-button></ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('4')">4</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('5')">5</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('6')">6</ion-button></ion-col>
+        <ion-col><ion-button expand="block" (click)="chooseOperator('-')">−</ion-button></ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('1')">1</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('2')">2</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('3')">3</ion-button></ion-col>
+        <ion-col><ion-button expand="block" (click)="chooseOperator('+')">+</ion-button></ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col size="6"><ion-button expand="block" fill="outline" (click)="input('0')">0</ion-button></ion-col>
+        <ion-col><ion-button expand="block" fill="outline" (click)="input('.')">.</ion-button></ion-col>
+        <ion-col><ion-button expand="block" color="success" (click)="calculate()">=</ion-button></ion-col>
+      </ion-row>
+    </ion-grid>
+  </main>
 </ion-content>
