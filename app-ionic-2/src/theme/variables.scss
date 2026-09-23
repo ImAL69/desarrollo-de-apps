@@ -1,2 +1,62 @@
-// For information on how to create your own theme, please refer to:
-// https://ionicframework.com/docs/theming/
+// Custom Pastel Purple / Lavender Theme
+:root {
+  --ion-color-primary: #9d7fe3;
+  --ion-color-primary-rgb: 157, 127, 227;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #8a70c8;
+  --ion-color-primary-tint: #a78be6;
+
+  --ion-color-secondary: #b8a4f9;
+  --ion-color-secondary-rgb: 184, 164, 249;
+  --ion-color-secondary-contrast: #322353;
+  --ion-color-secondary-contrast-rgb: 50, 35, 83;
+  --ion-color-secondary-shade: #a290db;
+  --ion-color-secondary-tint: #c0aefa;
+
+  --ion-color-tertiary: #dfd4f8;
+  --ion-color-tertiary-rgb: 223, 212, 248;
+  --ion-color-tertiary-contrast: #433258;
+  --ion-color-tertiary-contrast-rgb: 67, 50, 88;
+  --ion-color-tertiary-shade: #c4bae0;
+  --ion-color-tertiary-tint: #e2d8f9;
+
+  --ion-color-success: #85dcb0;
+  --ion-color-success-rgb: 133, 220, 176;
+  --ion-color-success-contrast: #1b4b32;
+  --ion-color-success-contrast-rgb: 27, 75, 50;
+
+  --ion-color-warning: #f7d08a;
+  --ion-color-warning-rgb: 247, 208, 138;
+  --ion-color-warning-contrast: #503d14;
+  --ion-color-warning-contrast-rgb: 80, 61, 20;
+
+  --ion-color-danger: #f28b82;
+  --ion-color-danger-rgb: 242, 139, 130;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+
+  --ion-color-light: #f7f4fc;
+  --ion-color-light-rgb: 247, 244, 252;
+  --ion-color-light-contrast: #433258;
+  --ion-color-light-contrast-rgb: 67, 50, 88;
+
+  --ion-color-medium: #a89bb9;
+  --ion-color-medium-rgb: 168, 155, 185;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+
+  --ion-color-dark: #3a2b50;
+  --ion-color-dark-rgb: 58, 43, 80;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+
+  --ion-background-color: #f7f4fc;
+  --ion-background-color-rgb: 247, 244, 252;
+  --ion-text-color: #433258;
+  --ion-text-color-rgb: 67, 50, 88;
+
+  --ion-toolbar-background: #9d7fe3;
+  --ion-toolbar-color: #ffffff;
+  --ion-item-background: #ffffff;
+}

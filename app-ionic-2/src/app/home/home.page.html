@@ -1,20 +1,92 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+  <ion-toolbar color="primary">
+    <ion-title>Cámara & Galería</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/gallery">
+        <ion-icon slot="icon-only" name="images-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="home-content ion-padding">
+  <div class="center-wrapper">
+    <div class="app-card">
+      <div class="logo-circle">
+        <ion-icon name="sparkles-outline"></ion-icon>
+      </div>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+      <h1 class="app-title">Estudio Fotográfico</h1>
+      <p class="app-subtitle">Captura momentos y organízalos en tu galería interna</p>
+
+      <div class="stats-badge">
+        <ion-badge color="tertiary">
+          <ion-icon name="images-outline"></ion-icon>
+          {{ photoService.photos.length }} fotos en galería
+        </ion-badge>
+      </div>
+
+      <div class="actions-container">
+        <!-- Botón Tomar Foto -->
+        <ion-button expand="block" shape="round" class="btn-take-photo" (click)="takefoto()">
+          <ion-icon slot="start" name="camera-outline"></ion-icon>
+          Tomar Foto
+        </ion-button>
+
+        <!-- Botón Galería -->
+        <ion-button expand="block" shape="round" fill="outline" class="btn-gallery" routerLink="/gallery">
+          <ion-icon slot="start" name="images-outline"></ion-icon>
+          Galería
+        </ion-button>
+      </div>
+    </div>
   </div>
+
+  <!-- Interfaz propia para revisar y guardar la foto tomada -->
+  <ion-modal [isOpen]="isReviewModalOpen" (didDismiss)="discardPhoto()" class="review-modal">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar color="primary">
+          <ion-title>Foto Capturada</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="discardPhoto()">
+              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="review-content ion-padding">
+        @if (tempPhotoWebPath) {
+          <div class="preview-box">
+            <ion-img [src]="tempPhotoWebPath" alt="Vista previa de la foto tomada"></ion-img>
+          </div>
+
+          <div class="review-details">
+            <h3>¿Qué deseas hacer con esta foto?</h3>
+            <p>Puedes guardarla en tu galería interna para verla cuando quieras o descartarla.</p>
+
+            <div class="review-actions">
+              <ion-button expand="block" shape="round" color="primary" class="save-btn" (click)="saveCapturedPhoto()">
+                <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+                Guardar en Galería
+              </ion-button>
+
+              <div class="secondary-actions">
+                <ion-button fill="clear" color="medium" (click)="retakePhoto()">
+                  <ion-icon slot="start" name="refresh-outline"></ion-icon>
+                  Tomar otra
+                </ion-button>
+
+                <ion-button fill="clear" color="danger" (click)="discardPhoto()">
+                  <ion-icon slot="start" name="close-outline"></ion-icon>
+                  Descartar
+                </ion-button>
+              </div>
+            </div>
+          </div>
+        }
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>
