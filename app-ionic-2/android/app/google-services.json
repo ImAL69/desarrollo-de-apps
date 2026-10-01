@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "432875946999",
+    "project_id": "camara-pruebas",
+    "storage_bucket": "camara-pruebas.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:432875946999:android:d0f9cbddbddf32218024f2",
+        "android_client_info": {
+          "package_name": "io.ionic.starter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU5aHz_RPcF_e3sD4FmvOEMiBqvBCT3eM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

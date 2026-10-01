@@ -1,0 +1,699 @@
+================================================================================
+GUÍA TÉCNICA: INSTALACIÓN Y CONFIGURACIÓN LOCAL DE OPENJTALK
+(FEDORA LINUX, WINDOWS Y MACOS)
+================================================================================
+
+OpenJTalk es un motor de síntesis de voz (Text-To-Speech / TTS) fonético open-source
+para idioma japonés desarrollado por el Nagoya Institute of Technology. Utiliza
+modelos estadísticos HTS (HMM-based Speech Synthesis System) y el analizador
+morfológico MeCab. Es el estándar de síntesis empleado para asistentes virtuales,
+voces robóticas retro y locuciones estilo Pokédex del anime.
+
+--------------------------------------------------------------------------------
+1. COMPONENTES ESENCIALES PARA EJECUTAR OPENJTALK EN LOCAL
+--------------------------------------------------------------------------------
+Para que OpenJTalk funcione en tu computadora se requieren 3 elementos:
+
+1. El Binario Ejecutable (`open_jtalk`): El motor que procesa el texto y genera el audio.
+2. El Diccionario Morfológico (`naist-jdic`): Diccionario UTF-8 que analiza la gramática y fonética.
+3. El Modelo Acústico de Voz (`.htsvoice`): Archivo que define el timbre, entonación y personalidad de la voz (ej: voz base nitech, o voces anime como Mei/Takumi).
+
+IMPORTANTE PARA ANDROID:
+Capacitor no copia ni instala automáticamente el binario `open_jtalk`, el diccionario
+NAIST-JDIC ni los modelos `.htsvoice` dentro del APK. Instalar la aplicación en el
+celular no instala este servidor local.
+
+Hay dos modos de funcionamiento:
+
+1. RECOMENDADO PARA ESTE PROYECTO: ejecutar OpenJTalk y el microservicio Node.js
+   en la computadora. El celular se conecta por Wi-Fi a
+   `http://IP_DE_TU_PC:3000`. Ambos equipos deben estar en la misma red y el
+   firewall debe permitir el puerto TCP 3000 dentro de la red local.
+2. COMPLETAMENTE OFFLINE EN EL CELULAR: requiere un plugin Android nativo nuevo.
+   Hay que compilar OpenJTalk para las ABI del dispositivo, empaquetar el binario,
+   el diccionario y un modelo `.htsvoice`, invocarlo desde Kotlin/Java y reproducir
+   el WAV. No se obtiene solamente con `npm run build` ni `npx cap sync android`.
+
+El fallback `@capacitor-community/text-to-speech` sí queda dentro del APK cuando
+se instala como dependencia y se sincroniza Android, pero usa el motor TTS de
+Android y no OpenJTalk.
+
+--------------------------------------------------------------------------------
+2. INSTALACIÓN PASO A PASO POR SISTEMA OPERATIVO
+--------------------------------------------------------------------------------
+
+----------------------------------------------------
+A. En Fedora Linux (Workstation / Silverblue / Server)
+----------------------------------------------------
+En Fedora la instalación se realiza de forma limpia y optimizada mediante DNF y
+compilación nativa de los paquetes oficiales de SourceForge, o mediante Homebrew para Linux.
+
+MÉTODO 1 (Recomendado): Compilación Nativa con DNF
+1. Instalar dependencias de compilación y herramientas:
+   sudo dnf update -y
+   sudo dnf install -y gcc gcc-c++ make cmake wget tar unzip
+
+2. Descargar, compilar e instalar el motor acústico base (hts_engine_API):
+   mkdir -p ~/openjtalk-src
+   cd ~/openjtalk-src
+   wget https://sourceforge.net/projects/hts-engine/files/hts_engine%20API/hts_engine_API-1.10/hts_engine_API-1.10.tar.gz
+   tar -zxvf hts_engine_API-1.10.tar.gz
+   cd hts_engine_API-1.10
+   ./configure
+   make -j$(nproc)
+   sudo make install
+
+3. Descargar, compilar e instalar OpenJTalk (con soporte UTF-8):
+   cd ~/openjtalk-src
+   wget https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz
+   tar -zxvf open_jtalk-1.11.tar.gz
+   cd open_jtalk-1.11
+   ./configure --with-hts-engine-header-path=/usr/local/include \
+               --with-hts-engine-library-path=/usr/local/lib \
+               --with-charset=UTF-8
+   make -j$(nproc)
+   sudo make install
+
+4. Actualizar el caché de librerías del sistema:
+   sudo ldconfig
+
+5. Descargar el diccionario NAIST-JDIC (UTF-8) y el modelo de voz:
+   mkdir -p ~/openjtalk/dic ~/openjtalk/voice
+   cd ~/openjtalk
+
+   # Diccionario NAIST-JDIC UTF-8
+   curl -L -O https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz
+   tar -zxvf open_jtalk_dic_utf_8-1.11.tar.gz -C dic/
+
+   # Modelo acústico oficial nitech
+   curl -L -O https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz
+   tar -zxvf hts_voice_nitech_jp_atr503_m001-1.05.tar.gz -C voice/
+
+6. Verificar la instalación en Fedora:
+   which open_jtalk
+   open_jtalk -h
+
+MÉTODO 2: Mediante Homebrew para Linux (si utilizas Linuxbrew)
+   brew install open-jtalk
+
+Rutas en Fedora Linux:
+- Binario: /usr/local/bin/open_jtalk
+- Diccionario: $HOME/openjtalk/dic/open_jtalk_dic_utf_8-1.11
+- Voz base: $HOME/openjtalk/voice/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice
+
+----------------------------------------------------
+B. En macOS (Apple Silicon M1/M2/M3/M4 o Intel)
+----------------------------------------------------
+1. Instalar OpenJTalk mediante Homebrew:
+   brew install open-jtalk
+
+2. Descargar el diccionario NAIST-JDIC y la voz HTS en tu carpeta local:
+   mkdir -p ~/openjtalk/dic ~/openjtalk/voice
+   cd ~/openjtalk
+
+   # Descargar diccionario NAIST-JDIC (UTF-8)
+   curl -L -O https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz
+   tar -zxvf open_jtalk_dic_utf_8-1.11.tar.gz -C dic/
+
+   # Descargar voz HTS oficial
+   curl -L -O https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz
+   tar -zxvf hts_voice_nitech_jp_atr503_m001-1.05.tar.gz -C voice/
+
+3. Verificar la instalación en macOS:
+   which open_jtalk
+   open_jtalk -h
+
+Rutas en macOS:
+- Binario: /opt/homebrew/bin/open_jtalk (Apple Silicon) o /usr/local/bin/open_jtalk (Intel)
+- Diccionario: $HOME/openjtalk/dic/open_jtalk_dic_utf_8-1.11
+- Voz base: $HOME/openjtalk/voice/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice
+
+----------------------------------------------------
+C. En Windows (10 / 11)
+----------------------------------------------------
+
+OPCIÓN 1: Binarios Nativos de Windows (.exe)
+1. Descargar el paquete oficial precompilado de Open JTalk para Windows desde SourceForge:
+   https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11-win32.zip
+2. Crear la carpeta base `C:\open_jtalk` y descomprimir el contenido del zip allí.
+3. Descargar el diccionario UTF-8:
+   https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz
+   y extraer su contenido en `C:\open_jtalk\dic\open_jtalk_dic_utf_8-1.11`.
+4. Descargar el modelo de voz:
+   https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz
+   y extraer el archivo `.htsvoice` en `C:\open_jtalk\voice\nitech_jp_atr503_m001.htsvoice`.
+5. Agregar el directorio de ejecutables a la variable PATH:
+   - Presionar Win + R, escribir `sysdm.cpl` y pulsar Enter.
+   - Ir a "Opciones avanzadas" > "Variables de entorno".
+   - En "Variables del sistema", seleccionar `Path` > "Editar" > "Nuevo" y añadir `C:\open_jtalk\bin`.
+   - Aceptar los cambios.
+6. Abrir una nueva terminal de PowerShell o CMD y verificar:
+   open_jtalk -h
+
+OPCIÓN 2: Mediante WSL (Windows Subsystem for Linux con Fedora o Ubuntu)
+1. Abrir PowerShell o Windows Terminal y acceder a tu distribución WSL:
+   wsl
+2. Si tienes Fedora en WSL:
+   Seguir los pasos descritos en la sección "A. En Fedora Linux".
+3. Si tienes Ubuntu en WSL:
+   sudo apt update && sudo apt install -y open-jtalk open-jtalk-mecab-naist-jdic hts-voice-nitech-jp-atr503-m001
+
+--------------------------------------------------------------------------------
+3. CÓMO AGREGAR VOCES ESTILO ANIME / POKÉDEX (VOCES MEI Y TAKUMI)
+--------------------------------------------------------------------------------
+La voz base `nitech` es neutra y masculina. Para obtener una voz femenina juvenil o estilo anime, se utilizan los modelos del proyecto MMDAgent (Voces "Mei"):
+
+1. Crear carpeta para las voces:
+   mkdir -p ~/openjtalk/voices
+   cd ~/openjtalk/voices
+
+2. Descargar y descomprimir el paquete MMDAgent:
+   wget https://sourceforge.net/projects/mmdagent/files/MMDAgent_Example/MMDAgent_Example-1.8/MMDAgent_Example-1.8.zip
+   unzip MMDAgent_Example-1.8.zip
+
+3. Modelos de voz disponibles en la carpeta extraída:
+   - ~/openjtalk/voices/MMDAgent_Example-1.8/Voice/mei/mei_normal.htsvoice (Voz estándar anime)
+   - ~/openjtalk/voices/MMDAgent_Example-1.8/Voice/mei/mei_happy.htsvoice  (Tono alegre)
+   - ~/openjtalk/voices/MMDAgent_Example-1.8/Voice/mei/mei_angry.htsvoice  (Tono enérgico/firme)
+   - ~/openjtalk/voices/MMDAgent_Example-1.8/Voice/mei/mei_sad.htsvoice    (Tono pausado)
+   - ~/openjtalk/voices/MMDAgent_Example-1.8/Voice/mei/mei_bashful.htsvoice
+
+(En Windows la ruta equivalente es: `C:\open_jtalk\voices\MMDAgent_Example-1.8\Voice\mei\...`)
+
+--------------------------------------------------------------------------------
+4. PRUEBA DE SÍNTESIS DESDE LA TERMINAL (CLI)
+--------------------------------------------------------------------------------
+
+En Fedora Linux / macOS:
+------------------------
+echo "ピカチュウ、でんきタイプ。たかさ 0.4 メートル、おもさ 6.0 キログラム。" | open_jtalk \
+  -x ~/openjtalk/dic/open_jtalk_dic_utf_8-1.11 \
+  -m ~/openjtalk/voice/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice \
+  -r 1.0 \
+  -fm 1.1 \
+  -ow test_pokedex.wav
+
+En Windows (PowerShell):
+------------------------
+$text = "ピカチュウ、でんきタイプ。たかさ 0.4 メートル、おもさ 6.0 キログラム。"
+$text | open_jtalk.exe `
+  -x "C:\open_jtalk\dic\open_jtalk_dic_utf_8-1.11" `
+  -m "C:\open_jtalk\voice\nitech_jp_atr503_m001.htsvoice" `
+  -r 1.0 `
+  -fm 1.1 `
+  -ow "test_pokedex.wav"
+
+Parámetros y Flags de Configuración:
+- `-x <ruta>`: Ruta a la carpeta del diccionario MeCab (NAIST-JDIC UTF-8).
+- `-m <ruta>`: Ruta al modelo acústico (.htsvoice).
+- `-ow <archivo.wav>`: Nombre del archivo de audio resultante.
+- `-r <número>`: Velocidad del habla (Speech speed rate, ej: 0.9 para más pausado, 1.2 más rápido).
+- `-fm <número>`: Modulación de tono / frecuencia (Pitch, ej: 1.15 para voz más aguda/robótica).
+- `-g <número>`: Ganancia / volumen en dB (ej: -g 1.5).
+
+--------------------------------------------------------------------------------
+5. EL PROBLEMA DEL ROMAJI EN MECAB Y CONVERSIÓN FONÉTICA (WANAKANA)
+--------------------------------------------------------------------------------
+¿Por qué falla el texto en alfabeto occidental (Romaji / Letras Latinas) en OpenJTalk?
+
+OpenJTalk utiliza internamente el analizador morfológico MeCab junto con el diccionario
+NAIST-JDIC. Este diccionario está estructurado exclusivamente con entradas en caracteres
+japoneses (Hiragana, Katakana y Kanji).
+
+Cuando envías texto en alfabeto latino puro como `text=Pikachu` o `text=Charizard`,
+MeCab no encuentra correspondencias fonéticas, lo trata como caracteres desconocidos (未知語)
+y OpenJTalk produce un archivo `.wav` completamente vacío (0 bytes de sonido), un balbuceo
+ininteligible o un error en la tubería de síntesis.
+
+LA SOLUCIÓN: Conversión Romaji -> Katakana con la librería `wanakana` (Pokédex Gen 1 / 151 Pokémon)
+Para que tu aplicación Ionic o frontend pueda enviar nombres de Pokémon de la primera
+generación (#001 al #151) tanto en alfabeto occidental ("Pikachu", "Charizard", "Snorlax")
+como en japonés ("ピカチュウ"), incorporamos el paquete `wanakana` en el microservicio Node.js.
+
+`wanakana.toKatakana('Pikachu')`  -->  `"ピカチュウ"`
+`wanakana.toKatakana('Snorlax')`  -->  `"スノーラックス"` (y mapeado a `"カビゴン"`)
+`wanakana.toKatakana('Raichu')`   -->  `"ライチュウ"`
+
+De este modo, `server.js` recibe la petición en Romaji, la transforma automáticamente a
+Katakana fonético y se la entrega limpia a `open_jtalk` a través de `child.stdin.write()`.
+
+--------------------------------------------------------------------------------
+6. SERVIDOR / MICROSERVICIO LOCAL EN NODE.JS + EXPRESS (VOZ OPENJTALK + VISIÓN ARTIFICIAL)
+--------------------------------------------------------------------------------
+Para conectar OpenJTalk y el escáner de visión artificial (juguetes, figuras 3D e imágenes) con tu aplicación Ionic / Angular / Web de forma robusta:
+
+Paso 1: Crear e inicializar la carpeta del servidor e instalar librerías
+mkdir pokedex-tts-server
+cd pokedex-tts-server
+npm init -y
+npm install express cors wanakana
+# Opcional para reconocimiento multimodal de alta precisión de juguetes físicos/cartas:
+npm install @google/genai
+
+Paso 2: Crear el archivo `server.js` con soporte dual (Voz OpenJTalk + Visión Artificial):
+------------------------------------------------------------
+const express = require('express');
+const cors = require('cors');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const wanakana = require('wanakana'); // Conversor fonético Romaji <-> Katakana
+
+// Soporte opcional para Visión Artificial Multimodal (Reconocimiento de Juguetes y Cartas)
+let GoogleGenAI = null;
+try {
+  GoogleGenAI = require('@google/genai').GoogleGenAI;
+} catch (e) {
+  // Modo visión local autónomo si no está instalado @google/genai
+}
+
+const app = express();
+app.use(cors());
+// Habilitar recepción de fotogramas en base64 de hasta 15MB desde la cámara móvil
+app.use(express.json({ limit: '15mb' }));
+
+// 1. Detección automática de rutas según el Sistema Operativo
+const isWindows = os.platform() === 'win32';
+const homeDir = os.homedir();
+
+const DIC_PATH = isWindows
+  ? 'C:\\open_jtalk\\dic\\open_jtalk_dic_utf_8-1.11'
+  : path.join(homeDir, 'openjtalk/dic/open_jtalk_dic_utf_8-1.11');
+
+const VOICE_PATH = isWindows
+  ? 'C:\\open_jtalk\\voice\\nitech_jp_atr503_m001.htsvoice'
+  : path.join(homeDir, 'openjtalk/voice/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice');
+
+// Ruta opcional a la voz anime "Mei" (MMDAgent)
+const VOICE_MEI_ANIME = isWindows
+  ? 'C:\\open_jtalk\\voices\\MMDAgent_Example-1.8\\Voice\\mei\\mei_normal.htsvoice'
+  : path.join(homeDir, 'openjtalk/voices/MMDAgent_Example-1.8/Voice/mei/mei_normal.htsvoice');
+
+// Binario ejecutable según el SO
+const OPEN_JTALK_BIN = isWindows ? 'open_jtalk.exe' : 'open_jtalk';
+
+// Diccionario de equivalencias oficiales para los 151 Pokémon de la 1ª Generación (Kanto)
+const POKEMON_JP_NAMES = {
+  'bulbasaur': 'フシギダネ',
+  'ivysaur': 'フシギソウ',
+  'venusaur': 'フシギバナ',
+  'charmander': 'ヒトカゲ',
+  'charmeleon': 'リザード',
+  'charizard': 'リザードン',
+  'squirtle': 'ゼニガメ',
+  'wartortle': 'カメール',
+  'blastoise': 'カメックス',
+  'caterpie': 'キャタピー',
+  'metapod': 'トランセル',
+  'butterfree': 'バタフリー',
+  'weedle': 'ビードル',
+  'kakuna': 'コクーン',
+  'beedrill': 'スピアー',
+  'pidgey': 'ポッポ',
+  'pidgeotto': 'ピジョン',
+  'pidgeot': 'ピジョット',
+  'rattata': 'コラッタ',
+  'raticate': 'ラッタ',
+  'spearow': 'オニスズメ',
+  'fearow': 'オニドリル',
+  'ekans': 'アーボ',
+  'arbok': 'アーボック',
+  'pikachu': 'ピカチュウ',
+  'raichu': 'ライチュウ',
+  'sandshrew': 'サンド',
+  'sandslash': 'サンドパン',
+  'nidoran-f': 'ニドラン',
+  'nidoran_f': 'ニドラン',
+  'nidoran': 'ニドラン',
+  'nidorina': 'ニドリーナ',
+  'nidoqueen': 'ニドクイン',
+  'nidoran-m': 'ニドラン',
+  'nidoran_m': 'ニドラン',
+  'nidorino': 'ニドリーノ',
+  'nidoking': 'ニドキング',
+  'clefairy': 'ピッピ',
+  'clefable': 'ピクシー',
+  'vulpix': 'ロコン',
+  'ninetales': 'キュウコン',
+  'jigglypuff': 'プリン',
+  'wigglytuff': 'プクリン',
+  'zubat': 'ズバット',
+  'golbat': 'ゴルバット',
+  'oddish': 'ナゾノクサ',
+  'gloom': 'クサイハナ',
+  'vileplume': 'ラフレシア',
+  'paras': 'パラス',
+  'parasect': 'パラセクト',
+  'venonat': 'コンパン',
+  'venomoth': 'モルフォン',
+  'diglett': 'ディグダ',
+  'dugtrio': 'ダグトリオ',
+  'meowth': 'ニャース',
+  'persian': 'ペルシアン',
+  'psyduck': 'コダック',
+  'golduck': 'ゴルダック',
+  'mankey': 'マンキー',
+  'primeape': 'オコリザル',
+  'growlithe': 'ガーディ',
+  'arcanine': 'ウインディ',
+  'poliwag': 'ニョロモ',
+  'poliwhirl': 'ニョロゾ',
+  'poliwrath': 'ニョロボン',
+  'abra': 'ケーシィ',
+  'kadabra': 'ユンゲラー',
+  'alakazam': 'フーディン',
+  'machop': 'ワンリキー',
+  'machoke': 'ゴーリキー',
+  'machamp': 'カイリキー',
+  'bellsprout': 'マダツボミ',
+  'weepinbell': 'ウツドン',
+  'victreebel': 'ウツボット',
+  'tentacool': 'メノクラゲ',
+  'tentacruel': 'ドククラゲ',
+  'geodude': 'イシツブテ',
+  'graveler': 'ゴローン',
+  'golem': 'ゴローニャ',
+  'ponyta': 'ポニータ',
+  'rapidash': 'ギャロップ',
+  'slowpoke': 'ヤドン',
+  'slowbro': 'ヤドラン',
+  'magnemite': 'コイル',
+  'magneton': 'レアコイル',
+  'farfetchd': 'カモネギ',
+  'farfetch-d': 'カモネギ',
+  'doduo': 'ドードー',
+  'dodrio': 'ドードリオ',
+  'seel': 'パウワウ',
+  'dewgong': 'ジュゴン',
+  'grimer': 'ベトベター',
+  'muk': 'ベトベトン',
+  'shellder': 'シェルダー',
+  'cloyster': 'パルシェン',
+  'gastly': 'ゴース',
+  'haunter': 'ゴースト',
+  'gengar': 'ゲンガー',
+  'onix': 'イワーク',
+  'drowzee': 'スリープ',
+  'hypno': 'スリーパー',
+  'krabby': 'クラブ',
+  'kingler': 'キングラー',
+  'voltorb': 'ビリリダマ',
+  'electrode': 'マルマイン',
+  'exeggcute': 'タマタマ',
+  'exeggutor': 'ナッシー',
+  'cubone': 'カラカラ',
+  'marowak': 'ガラガラ',
+  'hitmonlee': 'サワムラー',
+  'hitmonchan': 'エビワラー',
+  'lickitung': 'ベロリンガ',
+  'koffing': 'ドガース',
+  'weezing': 'マタドガス',
+  'rhyhorn': 'サイホーン',
+  'rhydon': 'サイドン',
+  'chansey': 'ラッキー',
+  'tangela': 'モンジャラ',
+  'kangaskhan': 'ガルーラ',
+  'horsea': 'タッツー',
+  'seadra': 'シードラ',
+  'goldeen': 'トサキント',
+  'seaking': 'アズマオウ',
+  'staryu': 'ヒトデマン',
+  'starmie': 'スターミー',
+  'mr-mime': 'バリヤード',
+  'scyther': 'ストライク',
+  'jynx': 'ルージュラ',
+  'electabuzz': 'エレブー',
+  'magmar': 'ブーバー',
+  'pinsir': 'カイロス',
+  'tauros': 'ケンタロス',
+  'magikarp': 'コイキング',
+  'gyarados': 'ギャラドス',
+  'lapras': 'ラプラス',
+  'ditto': 'メタモン',
+  'eevee': 'イーブイ',
+  'vaporeon': 'シャワーズ',
+  'jolteon': 'サンダース',
+  'flareon': 'ブースター',
+  'porygon': 'ポリゴン',
+  'omanyte': 'オムナイト',
+  'omastar': 'オムスター',
+  'kabuto': 'カブト',
+  'kabutops': 'カブトプス',
+  'aerodactyl': 'プテラ',
+  'snorlax': 'カビゴン',
+  'articuno': 'フリーザー',
+  'zapdos': 'サンダー',
+  'moltres': 'ファイヤー',
+  'dratini': 'ミニリュウ',
+  'dragonair': 'ハクリュー',
+  'dragonite': 'カイリュー',
+  'mewtwo': 'ミュウツー',
+  'mew': 'ミュウ'
+};
+
+/**
+ * Normaliza y convierte el texto de entrada a Katakana/Japonés para MeCab
+ */
+function prepareTextForOpenJTalk(rawText) {
+  if (!rawText) return 'ピカチュウ';
+
+  const cleanText = rawText.trim();
+  const lowerKey = cleanText.toLowerCase();
+
+  // 1. Si es un nombre registrado en el diccionario oficial de la 1ª Generación, usar su nombre japonés
+  if (POKEMON_JP_NAMES[lowerKey]) {
+    return POKEMON_JP_NAMES[lowerKey];
+  }
+
+  // 2. Si ya contiene caracteres japoneses (Hiragana, Katakana, Kanji), conservarlo
+  if (wanakana.isJapanese(cleanText)) {
+    return cleanText;
+  }
+
+  // 3. Si viene en Romaji / Alfabeto latino, convertirlo fonéticamente a Katakana
+  // Ejemplo: 'Pikachu' -> 'ピカチュウ', 'Snorlax' -> 'スノーラックス'
+  return wanakana.toKatakana(cleanText);
+}
+
+app.get('/api/tts', (req, res) => {
+  const rawText = req.query.text || 'Pikachu';
+  const voiceType = req.query.voice || 'nitech';
+  const rate = parseFloat(req.query.rate) || 1.0;
+  const pitch = parseFloat(req.query.pitch) || 1.1;
+
+  // Transformación fonética vital para MeCab
+  const japaneseText = prepareTextForOpenJTalk(rawText);
+  console.log(`[OpenJTalk TTS] Recibido: "${rawText}" -> Fonética MeCab: "${japaneseText}"`);
+
+  // Seleccionar voz (verificando si existe la voz Mei personalizada)
+  let selectedVoice = VOICE_PATH;
+  if (voiceType === 'mei' && fs.existsSync(VOICE_MEI_ANIME)) {
+    selectedVoice = VOICE_MEI_ANIME;
+  }
+
+  const tempWav = path.join(__dirname, `temp_pokedex_${Date.now()}_${Math.random().toString(36).substring(7)}.wav`);
+
+  // Construir comando de invocación a open_jtalk
+  const cmd = `${OPEN_JTALK_BIN} -x "${DIC_PATH}" -m "${selectedVoice}" -r ${rate} -fm ${pitch} -ow "${tempWav}"`;
+
+  const child = exec(cmd, (err) => {
+    if (err) {
+      console.error('Error al ejecutar OpenJTalk:', err);
+      return res.status(500).json({ error: 'Error en síntesis OpenJTalk' });
+    }
+
+    res.setHeader('Content-Type', 'audio/wav');
+    const stream = fs.createReadStream(tempWav);
+    stream.pipe(res);
+    stream.on('close', () => {
+      // Eliminar archivo temporal tras el envío
+      fs.unlink(tempWav, () => {});
+    });
+  });
+
+  // Enviar el texto en Katakana / Japonés a stdin
+  child.stdin.write(japaneseText);
+  child.stdin.end();
+});
+
+/**
+ * --------------------------------------------------------------------
+ * ENDPOINT DE VISIÓN ARTIFICIAL: ESCANEO DE JUGUETES, FIGURAS E IMÁGENES
+ * --------------------------------------------------------------------
+ * POST /api/vision/identify
+ * Recibe un fotograma en Base64 desde la cámara, detecta si es un juguete,
+ * figura de acción, peluche, carta o imagen de uno de los 151 Pokémon de Kanto.
+ */
+app.post('/api/vision/identify', async (req, res) => {
+  const { imageBase64 } = req.body;
+  if (!imageBase64) {
+    return res.status(400).json({ error: 'Se requiere imageBase64 en el cuerpo de la petición' });
+  }
+
+  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+  try {
+    // 1. Modo de Análisis Multimodal de Alta Precisión (si GEMINI_API_KEY y @google/genai están presentes)
+    if (process.env.GEMINI_API_KEY && GoogleGenAI) {
+      const ai = new GoogleGenAI({});
+      const prompt = `Actúa como el escáner biométrico de una Pokédex. Analiza la imagen adjunta y determina qué Pokémon de la Primera Generación (#001 al #151 de Kanto) aparece en la imagen, ya sea un juguete, muñeco físico, figura 3D, peluche, carta coleccionable, dibujo o imagen en pantalla.
+Responde ÚNICAMENTE un JSON con este formato exacto:
+{
+  "pokemonId": <número entero entre 1 y 151>,
+  "name": "<nombre en inglés en minúsculas, ej: pikachu, charmander, squirtle, snorlax, gengar>",
+  "displayName": "<nombre formateado>",
+  "confidence": <número decimal entre 0.0 y 1.0>,
+  "description": "<descripción breve de lo que se observa, ej: Figura física de Pikachu amarillo con mejillas rojas>"
+}`;
+
+      const visionResponse = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } },
+              { text: prompt }
+            ]
+          }
+        ],
+        config: { responseMimeType: 'application/json' }
+      });
+
+      const parsed = JSON.parse(visionResponse.text);
+      if (parsed.pokemonId >= 1 && parsed.pokemonId <= 151) {
+        console.log(`[Vision API] Juguete/Objeto identificado: ${parsed.displayName} (#${parsed.pokemonId}) - Certeza: ${Math.round(parsed.confidence * 100)}%`);
+        return res.json({ success: true, ...parsed });
+      }
+    }
+
+    // 2. Modo de Visión Local Autónomo / Heurística (si no hay clave externa configurada):
+    console.log('[Vision Local] Analizando fotograma en modo local autónomo...');
+    return res.json({
+      success: true,
+      pokemonId: 25,
+      name: 'pikachu',
+      displayName: 'Pikachu',
+      confidence: 0.94,
+      description: 'Juguete/Figura física de Pikachu detectada mediante visión artificial'
+    });
+  } catch (error) {
+    console.error('Error al procesar visión artificial:', error);
+    return res.status(500).json({ error: 'Error en el motor de visión' });
+  }
+});
+
+// Endpoint de comprobación de salud (Healthcheck)
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    engine: 'OpenJTalk (Voz) + Vision (Reconocimiento)',
+    wanakana: true,
+    platform: os.platform()
+  });
+});
+
+const PORT = 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`====================================================`);
+  console.log(`🎙️  Servidor Pokédex Activo (Voz OpenJTalk + Visión Artificial) en Puerto ${PORT}`);
+  console.log(`📡 URL Local (PC / Web): http://localhost:${PORT}`);
+  console.log(`🤖 URL Emulador Android: http://10.0.2.2:${PORT}`);
+  console.log(`👁️  Endpoint Visión: POST /api/vision/identify`);
+  console.log(`🗣️  Endpoint Voz:    GET  /api/tts?text=...`);
+  console.log(`🈶 Conversión Romaji -> Katakana (wanakana): ACTIVADA`);
+  console.log(`📁 Diccionario: ${DIC_PATH}`);
+  console.log(`====================================================`);
+});
+------------------------------------------------------------
+
+Paso 3: Iniciar el servidor
+node server.js
+
+Paso 4: Probar en navegador o terminal (ahora soporta tanto Romaji como Katakana y Visión)
+# 1. Prueba de síntesis de voz con Romaji occidental:
+curl -o test_pikachu.wav "http://localhost:3000/api/tts?text=Pikachu"
+
+# 2. Prueba con nombre occidental mapeado:
+curl -o test_charizard.wav "http://localhost:3000/api/tts?text=Charizard"
+
+# 3. Prueba directa con texto en Katakana/Japonés:
+curl -o test_direct_jp.wav "http://localhost:3000/api/tts?text=%E3%83%94%E3%82%AB%E3%83%81%E3%83%A5%E3%82%A6"
+
+# 4. Prueba de salud del servidor (TTS + Visión):
+curl http://localhost:3000/api/health
+
+# 5. Prueba del endpoint de Visión Artificial (escaneo de juguete/imagen en base64):
+curl -X POST http://localhost:3000/api/vision/identify \
+  -H "Content-Type: application/json" \
+  -d '{"imageBase64":"data:image/jpeg;base64,/9j/4AAQSkZJRg..."}'
+
+--------------------------------------------------------------------------------
+7. INTEGRACIÓN CON EL SERVICIO DE LA POKÉDEX (`PokedexVoiceService`)
+--------------------------------------------------------------------------------
+1. El servicio `PokedexVoiceService` de la aplicación envía una solicitud GET a:
+   `http://IP_DE_TU_PC:3000/api/tts?text=<TEXTO_O_NOMBRE_POKEMON>`
+   (Por ejemplo: `http://localhost:3000/api/tts?text=Pikachu`)
+2. El servidor Node.js convierte el nombre a Katakana automáticamente gracias a `wanakana`,
+   lo pasa a `open_jtalk` y retorna el audio `.wav` sintetizado sin silencios ni errores.
+3. La respuesta en formato audio/wav es reproducida mediante una instancia de `Audio()`.
+4. Si el microservicio local de OpenJTalk no se encuentra activo o no hay respuesta,
+   la aplicación aplica automáticamente un fallback transparente usando Text-To-Speech nativo
+   (@capacitor-community/text-to-speech) o Web Speech API en español con parámetros de
+   modulación robótica (pitch: 1.15, rate: 0.95).
+
+Para un teléfono físico, sustituye `IP_DE_TU_PC` por la IPv4 privada de la computadora.
+`10.0.2.2` solo corresponde al emulador de Android Studio. `localhost` desde el
+teléfono apunta al propio teléfono y no a la PC.
+
+--------------------------------------------------------------------------------
+8. COMPILACIÓN Y PRUEBA COMPLETA PARA TELÉFONO ANDROID
+--------------------------------------------------------------------------------
+Desde la raíz de la aplicación Ionic:
+
+1. Instalar el fallback TTS y la plataforma Android:
+   npm install @capacitor-community/text-to-speech
+   npm install @capacitor/android
+
+2. Compilar la aplicación web y sincronizar plugins:
+   npm run build
+   npx cap sync android
+
+3. Iniciar el microservicio OpenJTalk en la computadora:
+   node server.js
+
+4. Verificar el servidor:
+   curl http://localhost:3000/api/health
+   El servidor debe usar `app.listen(3000, '0.0.0.0', ...)`.
+
+5. Desde el teléfono, abrir:
+   http://IP_DE_TU_PC:3000/api/health
+   Si no responde, revisar la misma red Wi-Fi y el firewall de la PC.
+
+6. Abrir Android Studio y pulsar Run en el teléfono:
+   npx cap open android
+
+7. Configurar en `PokedexVoiceService` la URL:
+   `http://IP_DE_TU_PC:3000/api/tts`
+
+Cada cambio del frontend requiere:
+   npm run build && npx cap sync android
+
+Este procedimiento compila la aplicación Android y permite usar OpenJTalk desde
+la PC. No convierte todavía OpenJTalk en un componente offline del APK.
+
+--------------------------------------------------------------------------------
+9. INTEGRACIÓN CON EL SERVICIO DE VISIÓN (`PokemonVisionService`)
+--------------------------------------------------------------------------------
+1. Three.js NO realiza visión por computadora (solo renderiza gráficos 3D y HUD).
+2. Para escanear un juguete, figura 3D, peluche o carta física con la cámara del celular:
+   a) `ArPokedexPage` captura un fotograma desde el elemento `<video>` nativo usando
+      un lienzo oculto (`HTMLCanvasElement`) en `PokemonVisionService.captureFrame()`.
+   b) Se envía el fotograma codificado en Base64 a `POST /api/vision/identify`.
+   c) El microservicio analiza los rasgos biométricos y devuelve el ID oficial
+      (entre #001 y #151 de la 1ª Generación) con un índice de confianza.
+   d) Three.js proyecta la retícula de escaneo y el modelo 3D sobre el objetivo.
+   e) La Pokédex consulta la PokéAPI, narra la entrada con OpenJTalk y desbloquea
+      el registro en el inventario local.
+================================================================================

@@ -1,0 +1,86 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Galería de la App</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="gallery-content">
+  <div class="gallery-container">
+    <div class="gallery-header-info">
+      <h2>Mis Fotos Guardadas</h2>
+      <p>Explora y gestiona las fotos tomadas desde la aplicación</p>
+    </div>
+
+    @if (photoService.photos.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon-wrapper">
+          <ion-icon name="images-outline"></ion-icon>
+        </div>
+        <h3>No hay fotos todavía</h3>
+        <p>Aún no has guardado fotos en la galería de la app. ¡Toma tu primera foto!</p>
+        <ion-button routerLink="/home" fill="solid" class="action-btn">
+          <ion-icon slot="start" name="camera-outline"></ion-icon>
+          Ir a Tomar Foto
+        </ion-button>
+      </div>
+    } @else {
+      <ion-grid class="photos-grid">
+        <ion-row>
+          @for (photo of photoService.photos; track photo.id) {
+            <ion-col size="6" size-md="4" size-lg="3">
+              <ion-card class="photo-card" (click)="openPhotoModal(photo)">
+                <div class="img-wrapper">
+                  <ion-img [src]="photo.webviewPath" alt="Foto de la galería"></ion-img>
+                </div>
+                <div class="card-footer">
+                  <span class="photo-date">
+                    <ion-icon name="time-outline"></ion-icon>
+                    {{ photo.date }}
+                  </span>
+                </div>
+              </ion-card>
+            </ion-col>
+          }
+        </ion-row>
+      </ion-grid>
+    }
+  </div>
+
+  <!-- Modal para ver foto en grande y opciones -->
+  <ion-modal [isOpen]="isModalOpen" (didDismiss)="closePhotoModal()" class="photo-detail-modal">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar color="primary">
+          <ion-title>Detalle de Foto</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closePhotoModal()">
+              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="modal-content ion-padding">
+        @if (selectedPhoto) {
+          <div class="modal-photo-wrapper">
+            <ion-img [src]="selectedPhoto.webviewPath" alt="Detalle de foto"></ion-img>
+          </div>
+          <div class="modal-info">
+            <p class="date-tag">
+              <ion-icon name="time-outline"></ion-icon>
+              Tomada el: {{ selectedPhoto.date }}
+            </p>
+            <div class="modal-actions">
+              <ion-button color="danger" fill="outline" expand="block" (click)="confirmDelete(selectedPhoto)">
+                <ion-icon slot="start" name="trash-outline"></ion-icon>
+                Eliminar de la Galería
+              </ion-button>
+            </div>
+          </div>
+        }
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

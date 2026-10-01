@@ -43,6 +43,7 @@ import { PhotoService } from '../services/photo.service';
     IonModal,
     IonButtons,
     IonBadge
+
   ],
 })
 export class HomePage {
