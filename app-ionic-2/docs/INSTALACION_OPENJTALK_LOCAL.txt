@@ -242,15 +242,28 @@ Katakana fonético y se la entrega limpia a `open_jtalk` a través de `child.std
 --------------------------------------------------------------------------------
 Para conectar OpenJTalk y el escáner de visión artificial (juguetes, figuras 3D e imágenes) con tu aplicación Ionic / Angular / Web de forma robusta:
 
-Paso 1: Crear e inicializar la carpeta del servidor e instalar librerías
-mkdir pokedex-tts-server
-cd pokedex-tts-server
-npm init -y
-npm install express cors wanakana
-# Opcional para reconocimiento multimodal de alta precisión de juguetes físicos/cartas:
-npm install @google/genai
+Paso 1: Usar la carpeta real del servidor
+En esta instalación el microservicio se encuentra en:
+   /home/al/openjtalk/voices/pokedex-tts-server
 
-Paso 2: Crear el archivo `server.js` con soporte dual (Voz OpenJTalk + Visión Artificial):
+No crees otra carpeta ni ejecutes el código JavaScript directamente en Bash.
+Entra en la carpeta existente y usa su package.json:
+   cd /home/al/openjtalk/voices/pokedex-tts-server
+   npm install
+
+Paso 2: Usar el archivo `pokedex-tts-server/server.js` con soporte dual (Voz OpenJTalk + Visión Artificial):
+La implementación ejecutable única está en `server.js`. No copies los bloques
+históricos de esta guía para crear otra versión. Arranca el servidor con:
+   npm start
+
+El puerto predeterminado es `3000`; puedes cambiarlo con:
+   PORT=3100 npm start
+
+También puedes cambiar las rutas sin editar el código:
+   OPENJTALK_DIC=/ruta/al/diccionario OPENJTALK_VOICE=/ruta/a/voz.htsvoice npm start
+
+El endpoint de visión requiere además `@google/genai` y `GEMINI_API_KEY`.
+Si no están configurados, devuelve HTTP 503; no inventa una identificación.
 ------------------------------------------------------------
 const express = require('express');
 const cors = require('cors');
@@ -534,21 +547,31 @@ app.post('/api/vision/identify', async (req, res) => {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
   try {
-    // 1. Modo de Análisis Multimodal de Alta Precisión (si GEMINI_API_KEY y @google/genai están presentes)
+    // 1. Modo de Análisis Multimodal de Alta Precisión con Gemini Vision
     if (process.env.GEMINI_API_KEY && GoogleGenAI) {
       const ai = new GoogleGenAI({});
-      const prompt = `Actúa como el escáner biométrico de una Pokédex. Analiza la imagen adjunta y determina qué Pokémon de la Primera Generación (#001 al #151 de Kanto) aparece en la imagen, ya sea un juguete, muñeco físico, figura 3D, peluche, carta coleccionable, dibujo o imagen en pantalla.
-Responde ÚNICAMENTE un JSON con este formato exacto:
+      const prompt = `Actúa como el escáner biométrico de alta precisión de una Pokédex de Primera Generación (Kanto #001 al #151).
+Analiza detalladamente la imagen adjunta. El objetivo puede ser:
+- Un peluche o muñeco físico de un Pokémon.
+- Un juguete, figura de acción o figura impresa en 3D.
+- Una carta coleccionable TCG, pegatina o dibujo.
+- Una imagen o fotografía en otra pantalla o impresa.
+
+Identifica si en la imagen aparece claramente alguno de los 151 Pokémon originales de Kanto (#001 Bulbasaur a #151 Mew).
+Si la imagen solo muestra una persona humana, un fondo, una habitación, una pared, o ningún Pokémon reconocible de Kanto, responde con pokemonId: 0 y confidence: 0.
+
+Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
 {
-  "pokemonId": <número entero entre 1 y 151>,
-  "name": "<nombre en inglés en minúsculas, ej: pikachu, charmander, squirtle, snorlax, gengar>",
-  "displayName": "<nombre formateado>",
+  "pokemonId": <número entero entre 1 y 151; o 0 si no hay ningún Pokémon>,
+  "name": "<nombre oficial en inglés en minúsculas, ej: pikachu, charmander, squirtle, snorlax, gengar; o 'none'>",
+  "displayName": "<nombre con mayúscula inicial, ej: Pikachu; o 'Ninguno'>",
   "confidence": <número decimal entre 0.0 y 1.0>,
-  "description": "<descripción breve de lo que se observa, ej: Figura física de Pikachu amarillo con mejillas rojas>"
+  "description": "<descripción breve de lo que se observa y por qué coincide o por qué no se detecta>"
 }`;
 
+      const modelName = process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite';
       const visionResponse = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: modelName,
         contents: [
           {
             role: 'user',
@@ -562,25 +585,23 @@ Responde ÚNICAMENTE un JSON con este formato exacto:
       });
 
       const parsed = JSON.parse(visionResponse.text);
-      if (parsed.pokemonId >= 1 && parsed.pokemonId <= 151) {
-        console.log(`[Vision API] Juguete/Objeto identificado: ${parsed.displayName} (#${parsed.pokemonId}) - Certeza: ${Math.round(parsed.confidence * 100)}%`);
-        return res.json({ success: true, ...parsed });
-      }
+      const isDetected = Number.isInteger(parsed.pokemonId) && parsed.pokemonId >= 1 && parsed.pokemonId <= 151;
+      return res.json({
+        success: true,
+        detected: isDetected,
+        pokemonId: isDetected ? parsed.pokemonId : 0,
+        name: isDetected ? parsed.name.toLowerCase() : 'none',
+        displayName: isDetected ? parsed.displayName : 'Ninguno',
+        confidence: parsed.confidence || 0,
+        description: parsed.description || (isDetected ? 'Pokémon de Kanto detectado' : 'No se detectó ningún Pokémon en la mira')
+      });
     }
 
-    // 2. Modo de Visión Local Autónomo / Heurística (si no hay clave externa configurada):
-    console.log('[Vision Local] Analizando fotograma en modo local autónomo...');
-    return res.json({
-      success: true,
-      pokemonId: 25,
-      name: 'pikachu',
-      displayName: 'Pikachu',
-      confidence: 0.94,
-      description: 'Juguete/Figura física de Pikachu detectada mediante visión artificial'
-    });
+    // 2. Modo sin API Key: aviso explícito
+    return res.status(503).json({ error: 'La visión requiere GEMINI_API_KEY configurada en .env' });
   } catch (error) {
     console.error('Error al procesar visión artificial:', error);
-    return res.status(500).json({ error: 'Error en el motor de visión' });
+    return res.status(502).json({ error: 'Error en el motor de visión: ' + error.message });
   }
 });
 
@@ -608,8 +629,9 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 ------------------------------------------------------------
 
-Paso 3: Iniciar el servidor
-node server.js
+Paso 3: Validar e iniciar el servidor
+npm test
+npm start
 
 Paso 4: Probar en navegador o terminal (ahora soporta tanto Romaji como Katakana y Visión)
 # 1. Prueba de síntesis de voz con Romaji occidental:
@@ -621,10 +643,10 @@ curl -o test_charizard.wav "http://localhost:3000/api/tts?text=Charizard"
 # 3. Prueba directa con texto en Katakana/Japonés:
 curl -o test_direct_jp.wav "http://localhost:3000/api/tts?text=%E3%83%94%E3%82%AB%E3%83%81%E3%83%A5%E3%82%A6"
 
-# 4. Prueba de salud del servidor (TTS + Visión):
+# 4. Prueba de salud del servidor y de los recursos OpenJTalk:
 curl http://localhost:3000/api/health
 
-# 5. Prueba del endpoint de Visión Artificial (escaneo de juguete/imagen en base64):
+# 5. Prueba del endpoint de Visión Artificial (requiere GEMINI_API_KEY):
 curl -X POST http://localhost:3000/api/vision/identify \
   -H "Content-Type: application/json" \
   -d '{"imageBase64":"data:image/jpeg;base64,/9j/4AAQSkZJRg..."}'
@@ -643,57 +665,66 @@ curl -X POST http://localhost:3000/api/vision/identify \
    (@capacitor-community/text-to-speech) o Web Speech API en español con parámetros de
    modulación robótica (pitch: 1.15, rate: 0.95).
 
-Para un teléfono físico, sustituye `IP_DE_TU_PC` por la IPv4 privada de la computadora.
-`10.0.2.2` solo corresponde al emulador de Android Studio. `localhost` desde el
-teléfono apunta al propio teléfono y no a la PC.
-
 --------------------------------------------------------------------------------
-8. COMPILACIÓN Y PRUEBA COMPLETA PARA TELÉFONO ANDROID
+8. COMPILACIÓN Y CONEXIÓN DESDE TELÉFONO ANDROID (USB O WI-FI)
 --------------------------------------------------------------------------------
-Desde la raíz de la aplicación Ionic:
+Para que la aplicación funcione en un celular físico Android con la cámara y
+conecte al servidor local (OpenJTalk + Visión Gemini), sigue estos pasos:
 
-1. Instalar el fallback TTS y la plataforma Android:
-   npm install @capacitor-community/text-to-speech
-   npm install @capacitor/android
+MÉTODO A (RECOMENDADO Y MÁS RÁPIDO): Conexión directa por cable USB (ADB Reverse)
+1. Conecta el teléfono a la PC mediante cable USB y activa "Depuración USB" en Ajustes de desarrollador.
+2. En la terminal de la computadora, ejecuta el comando de túnel inverso:
+   adb reverse tcp:3000 tcp:3000
+   Esto hace que cualquier petición a `http://localhost:3000` desde el teléfono
+   se reenvíe instantáneamente al puerto 3000 de tu PC, sin problemas de Wi-Fi,
+   sin firewalls y con latencia cero.
 
-2. Compilar la aplicación web y sincronizar plugins:
+MÉTODO B: Conexión mediante red local Wi-Fi
+1. Conecta tu PC y el teléfono a la misma red Wi-Fi.
+2. Averigua la IP local de tu PC:
+   - Linux: `hostname -I` o `ip addr` (ejemplo: 192.168.1.15)
+   - Windows: `ipconfig`
+3. Abre el puerto 3000 en el firewall de tu PC:
+   - Fedora Linux: `sudo firewall-cmd --add-port=3000/tcp --permanent && sudo firewall-cmd --reload`
+   - Ubuntu: `sudo ufw allow 3000/tcp`
+4. En el navegador del teléfono, verifica que abra: `http://192.168.X.X:3000/api/health`
+
+PERMISO OBLIGATORIO DE RED EN ANDROID (YA CONFIGURADO):
+Android 9 (Pie) y superior bloquea por defecto las conexiones HTTP sin cifrar (Cleartext).
+Para que el celular pueda comunicarse con `http://...:3000`, en `android/app/src/main/AndroidManifest.xml`
+dentro de la etiqueta `<application>` se incluyó:
+android:usesCleartextTraffic="true"
+
+COMPILACIÓN Y DESPLIEGUE DEL APK:
+1. Compilar el frontend y sincronizar Capacitor:
    npm run build
    npx cap sync android
 
-3. Iniciar el microservicio OpenJTalk en la computadora:
-   node server.js
+2. Generar el APK de depuración:
+   cd android && ./gradlew assembleDebug
+   (El APK generado se ubica en: `android/app/build/outputs/apk/debug/app-debug.apk`)
 
-4. Verificar el servidor:
-   curl http://localhost:3000/api/health
-   El servidor debe usar `app.listen(3000, '0.0.0.0', ...)`.
-
-5. Desde el teléfono, abrir:
-   http://IP_DE_TU_PC:3000/api/health
-   Si no responde, revisar la misma red Wi-Fi y el firewall de la PC.
-
-6. Abrir Android Studio y pulsar Run en el teléfono:
-   npx cap open android
-
-7. Configurar en `PokedexVoiceService` la URL:
-   `http://IP_DE_TU_PC:3000/api/tts`
-
-Cada cambio del frontend requiere:
-   npm run build && npx cap sync android
-
-Este procedimiento compila la aplicación Android y permite usar OpenJTalk desde
-la PC. No convierte todavía OpenJTalk en un componente offline del APK.
+3. Instalar en el celular por USB:
+   adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+   o abre el proyecto con `npx cap open android` y pulsa "Run 'app'" en Android Studio.
 
 --------------------------------------------------------------------------------
-9. INTEGRACIÓN CON EL SERVICIO DE VISIÓN (`PokemonVisionService`)
+9. ESCÁNER AUTOMÁTICO EN TIEMPO REAL CON VISIÓN ARTIFICIAL (`ArPokedexPage`)
 --------------------------------------------------------------------------------
-1. Three.js NO realiza visión por computadora (solo renderiza gráficos 3D y HUD).
-2. Para escanear un juguete, figura 3D, peluche o carta física con la cámara del celular:
-   a) `ArPokedexPage` captura un fotograma desde el elemento `<video>` nativo usando
-      un lienzo oculto (`HTMLCanvasElement`) en `PokemonVisionService.captureFrame()`.
-   b) Se envía el fotograma codificado en Base64 a `POST /api/vision/identify`.
-   c) El microservicio analiza los rasgos biométricos y devuelve el ID oficial
-      (entre #001 y #151 de la 1ª Generación) con un índice de confianza.
-   d) Three.js proyecta la retícula de escaneo y el modelo 3D sobre el objetivo.
-   e) La Pokédex consulta la PokéAPI, narra la entrada con OpenJTalk y desbloquea
-      el registro en el inventario local.
+1. El escaneo en la aplicación es 100% AUTOMÁTICO y REAL:
+   - Se eliminaron los botones de prueba inútiles (como cambiar ID manual o aleatorizar).
+   - La aplicación ahora corre un bucle continuo de escaneo cada 2.5 segundos.
+   - Captura un fotograma del elemento `<video>` nativo y lo envía a `POST /api/vision/identify`.
+   - Utiliza Gemini 3.5 Flash Lite para examinar si en la mira hay un objeto físico
+     (peluche, juguete, figura 3D, dibujo, carta coleccionable o foto en pantalla)
+     correspondiente a los 151 Pokémon originales de Kanto (#001 Bulbasaur a #151 Mew).
+   - Si enfocas una persona, habitación o pared vacía, la IA responde `pokemonId: 0` y la mira
+     se mantiene buscando activamente sin inventar datos falsos ni mostrar errores.
+   - Si detecta un Pokémon de Kanto:
+     a) La retícula Three.js cambia de azul a verde brillante.
+     b) Consulta PokéAPI para obtener tipos, altura, peso, estadísticas y descripción.
+     c) Lo registra en el almacenamiento persistente de la Pokédex.
+     d) Reproduce la entrada por voz con OpenJTalk (o TTS nativo en el celular).
+     e) Despliega la ficha holográfica retro pixel-art con botones para escuchar,
+        ir al registro completo o cerrar y seguir escaneando.
 ================================================================================

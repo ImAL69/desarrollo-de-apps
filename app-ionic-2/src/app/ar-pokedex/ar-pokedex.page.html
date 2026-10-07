@@ -1,0 +1,110 @@
+<ion-content [fullscreen]="true" class="pokedex-ar-viewport">
+  <!-- Fondo de Video de Cámara Real -->
+  <video #cameraVideo class="camera-stream" autoplay playsinline muted></video>
+
+  <!-- Capa 3D WebGL con Holograma y Retícula -->
+  <canvas #arCanvas class="webgl-canvas"></canvas>
+
+  <!-- Scanlines CRT Retro y Grilla Pixel Art -->
+  <div class="crt-scanlines"></div>
+
+  <!-- HUD Pokédex Pixel Art -->
+  <div class="pokedex-hud">
+    <!-- Barra Superior -->
+    <div class="hud-top">
+      <ion-button fill="clear" class="pixel-btn-circle" (click)="goHome()">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+
+      <div class="pokedex-led-cluster">
+        <div class="big-blue-led"></div>
+        <div class="small-led red-led"></div>
+        <div class="small-led yellow-led"></div>
+        <div class="small-led green-led"></div>
+      </div>
+
+      <ion-button fill="clear" class="pixel-btn-badge" (click)="openPokedexList()">
+        <ion-icon slot="start" name="book-outline"></ion-icon>
+        {{ storageService.getDiscoveredCount() }}/151
+      </ion-button>
+    </div>
+
+    <div class="camera-status" [class.error]="cameraError">
+      {{ cameraError || cameraStatus }}
+    </div>
+    @if (visionStatus) {
+      <div class="vision-status">{{ visionStatus }}</div>
+    }
+
+    <!-- Visor Central con Retícula -->
+    <div class="hud-center">
+      <div class="pixel-crosshair" [class.scanning]="isScanning">
+        <div class="corner top-left"></div>
+        <div class="corner top-right"></div>
+        <div class="corner bottom-left"></div>
+        <div class="corner bottom-right"></div>
+        <div class="radar-line"></div>
+      </div>
+    </div>
+
+    <!-- Tarjeta de Información Pixel Art Flotante -->
+    @if (scannedPokemon) {
+      <div class="pokemon-card-pixel nes-container is-dark with-title">
+        <div class="card-title-bar">
+          <p class="title">{{ scannedPokemon.pokedexNumber }} {{ scannedPokemon.name }}</p>
+          <button class="pixel-close-btn" (click)="dismissCard()" aria-label="Cerrar ficha">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="card-grid">
+          <div class="sprite-box">
+            <img [src]="scannedPokemon.spriteArtworkUrl || scannedPokemon.spritePixelUrl" [alt]="scannedPokemon.name" class="pixel-sprite" />
+          </div>
+
+          <div class="info-box">
+            <div class="types-row">
+              @for (t of scannedPokemon.types; track t.name) {
+                <span class="pixel-badge" [style.backgroundColor]="t.bgPixel" [style.borderColor]="t.color">
+                  {{ t.name }}
+                </span>
+              }
+            </div>
+
+            <p class="stat-line">ALT: {{ scannedPokemon.heightMeters }} m | PESO: {{ scannedPokemon.weightKg }} kg</p>
+            <p class="flavor-desc">{{ scannedPokemon.description }}</p>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button class="pixel-btn is-warning" (click)="repeatVoice()">
+            <ion-icon name="volume-high-outline"></ion-icon> ESCUCHAR
+          </button>
+          <button class="pixel-btn is-secondary" (click)="openPokedexList()">
+            <ion-icon name="book-outline"></ion-icon> VER POKÉDEX
+          </button>
+          <button class="pixel-btn is-secondary" (click)="dismissCard()">
+            <ion-icon name="scan-outline"></ion-icon> SEGUIR
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Barra Inferior de Acciones -->
+    <div class="hud-bottom">
+      <div class="actions-container">
+        <!-- Control de Escáner Automático Continuo -->
+        <button class="pixel-btn" [class.is-auto-active]="isAutoScanActive" [class.is-secondary]="!isAutoScanActive" (click)="toggleAutoScan()">
+          <ion-icon [name]="isAutoScanActive ? 'checkmark-circle-outline' : 'pause-circle-outline'"></ion-icon>
+          AUTO-ESCÁNER: {{ isAutoScanActive ? 'ACTIVO (EN VIVO)' : 'PAUSADO' }}
+        </button>
+
+        <!-- Botón de Escaneo Inmediato / Manual -->
+        <button class="pixel-btn is-primary is-large" [disabled]="isScanning" (click)="manualScan()">
+          <ion-icon name="scan-outline"></ion-icon>
+          {{ isScanning ? 'ANALIZANDO IMAGEN...' : 'ESCANEAR AHORA' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</ion-content>

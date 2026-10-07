@@ -31,6 +31,8 @@ log.txt
 
 # Node
 /node_modules
+/pokedex-tts-server/node_modules
+pokedex-tts-server/.env
 npm-debug.log
 yarn-error.log
 
@@ -68,3 +70,5 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+.fake

@@ -1,0 +1,326 @@
+GUIA: COMO PASAR EL FRONTEND DE LA APP A CODIGO
+================================================
+
+Este proyecto no usa React ni Vue. El frontend esta construido con:
+
+  - Ionic 9 para los componentes y la experiencia movil.
+  - Angular 22 para las paginas, servicios, rutas e inyeccion de dependencias.
+  - Componentes Angular standalone; no se usa AppModule.
+  - TypeScript para la logica.
+  - HTML para la plantilla de cada pantalla.
+  - SCSS para los estilos.
+  - Capacitor 8 para compilar la aplicacion web como aplicacion Android.
+  - Android Studio para ejecutar y depurar la parte nativa Android.
+  - NES.css 2.2.1 para los paneles y componentes visuales estilo NES/pixel art.
+  - Google Fonts `Press Start 2P` y `VT323` para la tipografia retro.
+
+La estructura principal es:
+
+  src/app/
+    home/
+      home.page.ts       Logica de la pantalla
+      home.page.html     Interfaz visual
+      home.page.scss     Estilos de la pantalla
+    gallery/
+    ar-pokedex/
+    pokedex-list/
+    services/            Servicios reutilizables y acceso a APIs/plugins
+    models/              Interfaces y tipos TypeScript
+    app.routes.ts        Rutas y navegacion
+
+COMO FUNCIONA EL PIXEL ART DE LA POKEDEX
+----------------------------------------
+
+La pantalla real de la Pokédex esta en:
+
+  src/app/pokedex-list/pokedex-list.page.ts
+  src/app/pokedex-list/pokedex-list.page.html
+  src/app/pokedex-list/pokedex-list.page.scss
+
+El estilo visual no viene de otro framework de frontend. Se construye con
+tres capas:
+
+  1. Ionic/Angular: estructura, navegacion, botones, modal y datos.
+  2. NES.css: clases como `nes-container`, `is-dark` y `with-title`.
+  3. SCSS propio: clases `pixel-header`, `pokedex-grid`, `pokemon-cell`,
+     `pixel-sprite`, `pixel-badge`, sombras, bordes y colores de la Pokédex.
+
+La dependencia `nes.css` esta en `package.json` y se carga globalmente desde:
+
+  src/global.scss
+
+La misma hoja global carga las fuentes `Press Start 2P` y `VT323`, y activa
+`image-rendering: pixelated` para que los sprites no se vean borrosos.
+
+Ejemplo de la implementación existente:
+
+  <div class="filter-panel nes-container is-dark">
+    ...
+  </div>
+
+  <img class="cell-sprite pixel-sprite" ...>
+
+`nes-container` y `is-dark` pertenecen a NES.css. `filter-panel`,
+`cell-sprite` y `pixel-sprite` pertenecen al SCSS de la aplicación. No se
+debe instalar otro frontend para obtener este estilo.
+
+Si agregas otra pantalla pixel art, reutiliza esas clases y variables:
+
+  font-family: var(--font-pixel);
+  color: var(--pokedex-yellow);
+  border: 3px solid #dedede;
+  box-shadow: 4px 4px 0 #000;
+
+Los sprites se obtienen desde los datos de Pokémon y se visualizan con
+`image-rendering: pixelated`; eso mejora el escalado, pero no convierte una
+imagen normal en arte pixelado.
+
+IMPORTANTE: ANDROID STUDIO NO ES EL EDITOR DEL FRONTEND
+---------------------------------------------------------
+
+Android Studio sirve principalmente para:
+
+  - Abrir el proyecto nativo que esta dentro de android/.
+  - Ejecutar la aplicacion en un emulador o telefono.
+  - Revisar Logcat.
+  - Depurar permisos, plugins y codigo Kotlin/Java.
+
+El codigo de la interfaz se modifica en:
+
+  /home/al/Escritorio/desarrollo-de-apps/app-ionic-2/src/
+
+Se recomienda editarlo con Visual Studio Code. Tambien se puede usar otro
+editor de texto, pero no se debe pegar TypeScript o HTML directamente en Bash.
+
+HERRAMIENTAS QUE DEBES USAR
+---------------------------
+
+Desde la raiz del proyecto:
+
+  cd /home/al/Escritorio/desarrollo-de-apps/app-ionic-2
+
+Herramientas principales:
+
+  - Visual Studio Code: editar .ts, .html, .scss y revisar errores.
+  - Node.js y npm: instalar dependencias y ejecutar scripts.
+  - Ionic CLI / Angular CLI: generar paginas, componentes y servicios.
+  - Navegador: probar la interfaz con `npm start`.
+  - Android Studio: probar el APK, el emulador, permisos y plugins.
+  - Chrome DevTools: inspeccionar HTML, estilos, consola y red durante
+    `npm start`.
+
+Comprobar versiones:
+
+  node --version
+  npm --version
+  npx ionic --version
+  npx ng version
+
+FLUJO NORMAL: DE UNA IDEA O DISENO A CODIGO
+-------------------------------------------
+
+1. Diseña la pantalla en papel, Figma u otra herramienta visual si quieres.
+   Una herramienta de diseño no se importa automaticamente a Ionic. Los
+   colores, medidas, textos, iconos y comportamiento deben trasladarse a
+   HTML y SCSS manualmente.
+
+2. Crea la pagina con Ionic CLI:
+
+   npx ionic generate page nombre-pagina
+
+   Ejemplo:
+
+   npx ionic generate page settings
+
+   Esto crea:
+
+   src/app/settings/settings.page.ts
+   src/app/settings/settings.page.html
+   src/app/settings/settings.page.scss
+
+   En este proyecto las paginas son standalone y usan SCSS por configuracion
+   de `angular.json`. No crees un modulo NgModule para una pagina nueva.
+
+3. Edita la plantilla HTML usando componentes Ionic:
+
+   <ion-header>
+     <ion-toolbar>
+       <ion-title>Ajustes</ion-title>
+     </ion-toolbar>
+   </ion-header>
+
+   <ion-content class="ion-padding">
+     <ion-button expand="block" (click)="guardar()">
+       Guardar
+     </ion-button>
+   </ion-content>
+
+   Los eventos como `(click)` llaman metodos del archivo .page.ts. Los datos
+   se muestran con interpolacion, por ejemplo `{{ pokemon.name }}`.
+
+4. Agrega la logica en TypeScript:
+
+   import { Component } from '@angular/core';
+   import { IonButton, IonContent, IonHeader, IonTitle, IonToolbar } from
+     '@ionic/angular/standalone';
+
+   @Component({
+     selector: 'app-settings',
+     templateUrl: './settings.page.html',
+     styleUrls: ['./settings.page.scss'],
+     imports: [IonButton, IonContent, IonHeader, IonTitle, IonToolbar],
+   })
+   export class SettingsPage {
+     guardar(): void {
+       console.log('Configuracion guardada');
+     }
+   }
+
+   Cada componente Ionic usado en el HTML debe estar incluido en `imports`.
+   Si falta, Angular mostrara un error en compilacion.
+
+5. Agrega estilos en el archivo SCSS de la pagina:
+
+   ion-content {
+     --background: #202040;
+   }
+
+   ion-button {
+     --background: #8f7aea;
+   }
+
+   Los estilos de una pagina deben ir en su .scss. Los estilos globales van
+   en `src/global.scss` y las variables del tema en `src/theme/variables.scss`.
+
+6. Registra la pantalla en `src/app/app.routes.ts`. La CLI suele hacerlo al
+   generar la pagina, pero siempre debes verificarlo:
+
+   {
+     path: 'settings',
+     loadComponent: () =>
+       import('./settings/settings.page').then((m) => m.SettingsPage),
+   }
+
+   Luego se abre con:
+
+   <ion-button routerLink="/settings">Abrir ajustes</ion-button>
+
+7. Prueba la interfaz en el navegador:
+
+   npm start
+
+   Abre la URL que muestre Angular, normalmente:
+
+   http://localhost:4200
+
+   Durante el desarrollo Angular recompila al guardar. Revisa la consola del
+   navegador y la terminal si aparece un error.
+
+8. Valida el proyecto antes de pasarlo a Android:
+
+   npm run build
+   npm run lint
+
+   Si `npm run lint` no esta configurado en una copia concreta, usa al menos
+   `npm run build` y corrige todos sus errores.
+
+9. Sincroniza el frontend con Capacitor:
+
+   npx cap sync android
+
+   Este comando copia el resultado web a `www/` y actualiza los plugins
+   nativos. No reemplaza `npm run build`; ejecuta ambos comandos cuando
+   quieras probar los cambios en Android:
+
+   npm run build && npx cap sync android
+
+10. Abre Android Studio:
+
+   npx cap open android
+
+   Selecciona un emulador o telefono y pulsa Run. Si cambias TypeScript, HTML
+   o SCSS, vuelve a ejecutar:
+
+   npm run build && npx cap sync android
+
+COMO IMPORTAR COMPONENTES O DISENOS
+-----------------------------------
+
+En Angular no se importa una pantalla visual como en un editor de arrastrar
+componentes. Se importan clases, componentes, servicios y tipos desde
+archivos TypeScript.
+
+Importar un servicio existente:
+
+  import { PokedexService } from '../services/pokedex.service';
+
+Usarlo mediante inyeccion:
+
+  constructor(private readonly pokedexService: PokedexService) {}
+
+Importar un modelo:
+
+  import type { Pokemon } from '../models/pokemon.model';
+
+Importar un componente Ionic standalone:
+
+  import { IonCard, IonContent } from '@ionic/angular/standalone';
+
+  @Component({
+    ...,
+    imports: [IonCard, IonContent],
+  })
+
+Para reutilizar una pieza visual propia, crea un componente:
+
+  npx ionic generate component shared/pokemon-card
+
+Despues importa su clase en la pagina que lo necesita y agregala al arreglo
+`imports` del decorador `@Component`. El selector generado se usa en HTML.
+
+DIFERENCIA ENTRE IMPORTAR UN DISENO Y USAR UN PLUGIN
+----------------------------------------------------
+
+Un diseno de Figma, imagen o maqueta solo sirve como referencia visual. Hay
+que reconstruirlo con HTML, componentes Ionic y SCSS. No copies HTML generado
+por una herramienta sin revisar accesibilidad, eventos y responsividad.
+
+Un plugin de Capacitor si se instala por npm y despues se sincroniza:
+
+  npm install NOMBRE_DEL_PLUGIN
+  npx cap sync android
+
+Ejemplo ya usado por este proyecto:
+
+  npm install @capacitor-community/text-to-speech
+  npx cap sync android
+
+La API del plugin se importa en un servicio o pagina TypeScript. Instalarlo
+no crea automaticamente botones ni pantallas; la interfaz debe programarse.
+
+ERRORES COMUNES
+---------------
+
+  - Ejecutar `npm install` fuera de la raiz del proyecto.
+  - Pegar codigo TypeScript, HTML o SCSS en Bash.
+  - Crear una pagina sin registrarla en app.routes.ts.
+  - Usar un componente Ionic en HTML sin agregarlo a `imports`.
+  - Editar `www/` directamente. `www/` es una salida generada.
+  - Abrir Android Studio sin ejecutar `npm run build` y `npx cap sync android`.
+  - Usar `localhost` desde un telefono fisico para llegar al servidor de la PC.
+    En ese caso usa la IP privada de la PC.
+
+RESUMEN DEL FLUJO
+-----------------
+
+  cd /home/al/Escritorio/desarrollo-de-apps/app-ionic-2
+  npx ionic generate page nombre-pagina
+  # editar .ts, .html y .scss en VS Code
+  npm start
+  npm run build
+  npx cap sync android
+  npx cap open android
+
+La carpeta `pokedex-tts-server/` tambien esta dentro de la aplicacion, pero
+es un servicio Node.js independiente. Se ejecuta aparte con `npm start` desde
+esa subcarpeta; no forma parte del frontend Angular ni se importa como pagina.

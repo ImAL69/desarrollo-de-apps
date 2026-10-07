@@ -1,6 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar color="primary">
-    <ion-title>Cámara & Galería</ion-title>
+    <ion-title>Pokédex RA & Cámara</ion-title>
     <ion-buttons slot="end">
       <ion-button routerLink="/gallery">
         <ion-icon slot="icon-only" name="images-outline"></ion-icon>
@@ -16,17 +16,29 @@
         <ion-icon name="sparkles-outline"></ion-icon>
       </div>
 
-      <h1 class="app-title">Estudio Fotográfico</h1>
-      <p class="app-subtitle">Captura momentos y organízalos en tu galería interna</p>
+      <h1 class="app-title">Pokédex Kanto 151</h1>
+      <p class="app-subtitle">Escaneo automático en Realidad Aumentada con cámara de juguetes, peluches e imágenes</p>
 
       <div class="stats-badge">
         <ion-badge color="tertiary">
-          <ion-icon name="images-outline"></ion-icon>
-          {{ photoService.photos.length }} fotos en galería
+          <ion-icon name="book-outline"></ion-icon>
+          {{ storageService.getDiscoveredCount() }} / {{ storageService.totalPokemons }} descubiertos
         </ion-badge>
       </div>
 
       <div class="actions-container">
+        <!-- Botón Escaneo RA Principal -->
+        <ion-button expand="block" shape="round" color="danger" class="btn-pokedex-ar" routerLink="/ar-pokedex">
+          <ion-icon slot="start" name="scan-outline"></ion-icon>
+          Abrir Escáner RA Automático
+        </ion-button>
+
+        <!-- Botón Registro Pokédex -->
+        <ion-button expand="block" shape="round" fill="outline" color="warning" class="btn-pokedex-list" routerLink="/pokedex-list">
+          <ion-icon slot="start" name="book-outline"></ion-icon>
+          Registro Pokédex (1ª Gen)
+        </ion-button>
+
         <!-- Botón Tomar Foto -->
         <ion-button expand="block" shape="round" class="btn-take-photo" (click)="takefoto()">
           <ion-icon slot="start" name="camera-outline"></ion-icon>
@@ -36,13 +48,13 @@
         <!-- Botón Galería -->
         <ion-button expand="block" shape="round" fill="outline" class="btn-gallery" routerLink="/gallery">
           <ion-icon slot="start" name="images-outline"></ion-icon>
-          Galería
+          Galería de Fotos ({{ photoService.photos.length }})
         </ion-button>
       </div>
     </div>
   </div>
 
-  <!-- Interfaz propia para revisar y guardar la foto tomada -->
+  <!-- Modal de Revisión de Foto -->
   <ion-modal [isOpen]="isReviewModalOpen" (didDismiss)="discardPhoto()" class="review-modal">
     <ng-template>
       <ion-header>
@@ -59,12 +71,12 @@
       <ion-content class="review-content ion-padding">
         @if (tempPhotoWebPath) {
           <div class="preview-box">
-            <ion-img [src]="tempPhotoWebPath" alt="Vista previa de la foto tomada"></ion-img>
+            <ion-img [src]="tempPhotoWebPath" alt="Vista previa de la foto"></ion-img>
           </div>
 
           <div class="review-details">
             <h3>¿Qué deseas hacer con esta foto?</h3>
-            <p>Puedes guardarla en tu galería interna para verla cuando quieras o descartarla.</p>
+            <p>Guárdala en tu galería interna para verla cuando quieras o descártala.</p>
 
             <div class="review-actions">
               <ion-button expand="block" shape="round" color="primary" class="save-btn" (click)="saveCapturedPhoto()">

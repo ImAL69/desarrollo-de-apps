@@ -1,28 +1,31 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
   IonTitle,
+  IonButtons,
   IonContent,
+  IonBadge,
   IonButton,
   IonIcon,
-  IonImg,
   IonModal,
-  IonButtons,
-  IonBadge,
+  IonImg,
   ToastController
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
+  scanOutline,
+  bookOutline,
   cameraOutline,
   imagesOutline,
-  checkmarkCircleOutline,
+  sparklesOutline,
   closeOutline,
   refreshOutline,
-  sparklesOutline
+  checkmarkCircleOutline
 } from 'ionicons/icons';
+import { PokedexStorageService } from '../services/PokedexStorageService';
 import { PhotoService } from '../services/photo.service';
 
 @Component({
@@ -36,82 +39,81 @@ import { PhotoService } from '../services/photo.service';
     IonHeader,
     IonToolbar,
     IonTitle,
+    IonButtons,
     IonContent,
+    IonBadge,
     IonButton,
     IonIcon,
-    IonImg,
     IonModal,
-    IonButtons,
-    IonBadge
-
-  ],
+    IonImg
+  ]
 })
-export class HomePage {
+export class HomePage implements OnInit {
+  public storageService = inject(PokedexStorageService);
   public photoService = inject(PhotoService);
   private toastCtrl = inject(ToastController);
 
-  // Foto temporal capturada para revisión en la interfaz propia
   public tempPhotoWebPath: string | null = null;
   public isReviewModalOpen = false;
 
   constructor() {
     addIcons({
+      scanOutline,
+      bookOutline,
       cameraOutline,
       imagesOutline,
-      checkmarkCircleOutline,
+      sparklesOutline,
       closeOutline,
       refreshOutline,
-      sparklesOutline
+      checkmarkCircleOutline
+    });
+  }
+
+  async ngOnInit() {
+    await this.storageService.initPokedexDatabase().catch(err => {
+      console.warn('Error inicializando Pokédex en Home:', err);
     });
   }
 
   async takefoto() {
     try {
-      const result = await this.photoService.capturePhoto();
-      if (result && result.webPath) {
-        this.tempPhotoWebPath = result.webPath;
+      const captured = await this.photoService.capturePhoto();
+      if (captured && captured.webPath) {
+        this.tempPhotoWebPath = captured.webPath;
         this.isReviewModalOpen = true;
       }
-    } catch (error: any) {
-      console.error('Error al capturar la foto:', error);
+    } catch (error) {
+      console.error('Error al capturar foto:', error);
       const toast = await this.toastCtrl.create({
-        message: error.message || 'No se pudo capturar la foto',
-        duration: 2500,
-        position: 'bottom',
-        color: 'danger'
+        message: 'No se pudo acceder a la cámara para tomar foto.',
+        duration: 3000,
+        color: 'warning'
       });
       await toast.present();
     }
   }
 
   async saveCapturedPhoto() {
-    if (!this.tempPhotoWebPath) return;
-
-    try {
+    if (this.tempPhotoWebPath) {
       await this.photoService.savePhotoToAppGallery(this.tempPhotoWebPath);
       this.isReviewModalOpen = false;
       this.tempPhotoWebPath = null;
-
       const toast = await this.toastCtrl.create({
-        message: '¡Foto guardada con éxito en la galería de la app!',
+        message: 'Foto guardada en la galería de la app.',
         duration: 2500,
-        position: 'bottom',
-        color: 'primary'
+        color: 'success'
       });
       await toast.present();
-    } catch (error) {
-      console.error('Error al guardar la foto en la app:', error);
     }
-  }
-
-  retakePhoto() {
-    this.isReviewModalOpen = false;
-    this.tempPhotoWebPath = null;
-    this.takefoto();
   }
 
   discardPhoto() {
     this.isReviewModalOpen = false;
     this.tempPhotoWebPath = null;
+  }
+
+  async retakePhoto() {
+    this.discardPhoto();
+    await this.takefoto();
   }
 }

@@ -1,0 +1,367 @@
+.pokedex-ar-viewport {
+  --background: transparent;
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font-pixel);
+
+  .camera-stream {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+  }
+
+  .webgl-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Efecto CRT Scanlines de pantalla de tubo retro */
+  .crt-scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px;
+    opacity: 0.6;
+  }
+
+  .pokedex-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 20px);
+    pointer-events: none;
+
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: auto;
+
+      .pixel-btn-circle {
+        --background: var(--pokedex-dark-red);
+        --color: #ffffff;
+        border: 3px solid #000;
+        box-shadow: 3px 3px 0px #000;
+        border-radius: 0;
+      }
+
+      .pokedex-led-cluster {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #111;
+        padding: 6px 12px;
+        border: 3px solid #000;
+        box-shadow: 2px 2px 0 #fff;
+
+        .big-blue-led {
+          width: 28px;
+          height: 28px;
+          background: radial-gradient(circle, #00f0ff 20%, #0077aa 80%);
+          border: 2px solid #fff;
+          border-radius: 50%;
+          animation: glowLed 1.5s infinite alternate;
+        }
+
+        .small-led {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          border: 1px solid #000;
+        }
+        .red-led { background: #ff0055; }
+        .yellow-led { background: #feca1b; }
+        .green-led { background: #00ff66; }
+      }
+
+      .pixel-btn-badge {
+        font-family: var(--font-pixel);
+        font-size: 0.65rem;
+        background: #000;
+        color: #00f0ff;
+        border: 2px solid #00f0ff;
+        box-shadow: 2px 2px 0 #000;
+      }
+    }
+
+    .camera-status {
+      align-self: center;
+      pointer-events: auto;
+      margin-top: 8px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.85);
+      border: 2px solid #00f0ff;
+      color: #00f0ff;
+      font-size: 0.65rem;
+      text-align: center;
+      text-shadow: 1px 1px 0 #000;
+      box-shadow: 2px 2px 0px #000;
+
+      &.error {
+        border-color: #ff0055;
+        color: #ff9ab8;
+      }
+    }
+
+    .vision-status {
+      align-self: center;
+      max-width: min(92vw, 560px);
+      margin-top: 6px;
+      padding: 6px 14px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid #feca1b;
+      color: #ffffff;
+      font-size: 0.65rem;
+      text-align: center;
+      text-shadow: 1px 1px 0 #000;
+      box-shadow: 2px 2px 0px #000;
+      animation: popPixel 0.2s ease-out;
+    }
+
+    .hud-center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .pixel-crosshair {
+        position: relative;
+        width: 180px;
+        height: 180px;
+
+        .corner {
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          border: 4px solid var(--pokedex-cyan);
+        }
+        .top-left { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .top-right { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .bottom-right { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+        .radar-line {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background: rgba(0, 240, 255, 0.8);
+          box-shadow: 0 0 8px var(--pokedex-cyan);
+          animation: radarSweep 2s linear infinite;
+        }
+
+        &.scanning .radar-line {
+          background: #ff0055;
+          box-shadow: 0 0 12px #ff0055;
+          animation-duration: 0.8s;
+        }
+      }
+    }
+
+    /* Tarjeta Pixel Art Flotante */
+    .pokemon-card-pixel {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.95);
+      border: 4px solid #ffffff;
+      box-shadow: 5px 5px 0px #000000;
+      padding: 12px;
+      color: #fff;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 420px;
+      animation: popPixel 0.25s ease-out;
+
+      .card-title-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        border-bottom: 2px dashed #444;
+        padding-bottom: 6px;
+
+        .title {
+          font-size: 0.85rem;
+          color: var(--pokedex-yellow);
+          margin: 0;
+          text-shadow: 2px 2px 0 #000;
+        }
+
+        .pixel-close-btn {
+          background: #222;
+          border: 2px solid #dedede;
+          color: #ff0055;
+          padding: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.1rem;
+
+          &:active {
+            transform: scale(0.9);
+          }
+        }
+      }
+
+      .card-grid {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+
+        .sprite-box {
+          background: #222;
+          border: 3px solid #555;
+          padding: 4px;
+          width: 80px;
+          height: 80px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          .pixel-sprite {
+            width: 72px;
+            height: 72px;
+            image-rendering: pixelated;
+          }
+        }
+
+        .info-box {
+          flex: 1;
+
+          .types-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+
+            .pixel-badge {
+              font-size: 0.55rem;
+              padding: 3px 6px;
+              border: 2px solid;
+              font-weight: bold;
+              text-shadow: 1px 1px 0 #000;
+            }
+          }
+
+          .stat-line {
+            font-size: 0.55rem;
+            color: #aaa;
+            margin: 4px 0;
+          }
+
+          .flavor-desc {
+            font-family: var(--font-retro-lcd);
+            font-size: 1.1rem;
+            line-height: 1.1;
+            color: #00f0ff;
+            margin: 4px 0 0 0;
+          }
+        }
+      }
+
+      .card-actions {
+        margin-top: 10px;
+        text-align: right;
+      }
+    }
+
+    .hud-bottom {
+      pointer-events: auto;
+
+      .actions-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  }
+}
+
+/* Botones con estilo 8-Bit */
+.pixel-btn {
+  font-family: var(--font-pixel);
+  font-size: 0.7rem;
+  padding: 12px 16px;
+  border: 4px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-transform: uppercase;
+  transition: transform 0.08s ease;
+
+  &:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0px #000;
+  }
+
+  &.is-primary {
+    background: var(--pokedex-red);
+    color: #fff;
+    &:hover { background: #ff1e42; }
+  }
+
+  &.is-secondary {
+    background: #333;
+    color: #00f0ff;
+    border-color: #00f0ff;
+  }
+
+  &.is-auto-active {
+    background: #007733;
+    color: #ffffff;
+    border-color: #00ff66;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.4), 4px 4px 0px #000;
+  }
+
+  &.is-warning {
+    background: var(--pokedex-yellow);
+    color: #000;
+  }
+
+  &.is-large {
+    font-size: 0.85rem;
+    padding: 16px;
+  }
+}
+
+@keyframes radarSweep {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+@keyframes glowLed {
+  0% { box-shadow: 0 0 4px #00f0ff; }
+  100% { box-shadow: 0 0 16px #00f0ff, 0 0 24px #00f0ff; }
+}
+
+@keyframes popPixel {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}

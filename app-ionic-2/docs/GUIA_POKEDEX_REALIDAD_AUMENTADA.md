@@ -107,15 +107,17 @@ npm install nes.css
 #### 5. Servidor / Microservicio Local de OpenJTalk en Node.js
 Para procesar la síntesis de voz con OpenJTalk en tu propia máquina en local (siguiendo la guía [`INSTALACION_OPENJTALK_LOCAL.txt`](./INSTALACION_OPENJTALK_LOCAL.txt)):
 ```bash
-# 1. Crear e ingresar a la carpeta del microservicio local
-mkdir pokedex-tts-server
-cd pokedex-tts-server
+# 1. Entrar en la carpeta real del microservicio local
+cd /home/al/openjtalk/voices/pokedex-tts-server
 
-# 2. Inicializar el paquete e instalar librerías del servidor (incluye wanakana para fonética y @google/genai para escaneo visual)
-npm init -y
-npm install express cors wanakana @google/genai
+# 2. Instalar las dependencias declaradas por el servidor
+npm install
 ```
 *Este microservicio en Node.js se ejecuta en tu computadora: convierte texto Romaji a Katakana con `wanakana`, genera voz local con `open_jtalk`, y analiza fotogramas de la cámara para reconocer juguetes, figuras 3D e imágenes de los 151 Pokémon de Kanto.*
+
+La visión multimodal solo se activa si defines `GEMINI_API_KEY`; sin esa variable
+`POST /api/vision/identify` responde HTTP 503. El endpoint no devuelve una
+identificación falsa como fallback.
 
 Para un teléfono físico, el servidor debe escuchar en `0.0.0.0`. Conecta ambos equipos a la misma red Wi-Fi, obtén la IPv4 privada de la computadora y configura la URL del servicio como `http://192.168.1.15:3000/api/tts`, reemplazando la IP de ejemplo. Permite el puerto TCP `3000` en el firewall solo para la red local y valida desde el teléfono `http://IP_DE_TU_PC:3000/api/health`.
 
@@ -436,6 +438,13 @@ export class PokemonVisionService {
 
 ### 5. Paso 3: Servidor Local Integrado: Visión Artificial + Síntesis de Voz OpenJTalk (`server.js`)
 
+> **Fuente única de verdad:** el servidor ejecutable está en
+> [`../pokedex-tts-server/server.js`](../pokedex-tts-server/server.js), sincronizado
+> con `/home/al/openjtalk/voices/pokedex-tts-server/server.js`. Esta guía y
+> `INSTALACION_OPENJTALK_LOCAL.txt` describen el mismo microservicio; no mantengas
+> copias independientes del código. La visión devuelve un error explícito si no se
+> configura Gemini; no identifica falsamente todas las imágenes como Pikachu.
+
 #### ¿Qué es OpenJTalk y cómo funciona en local?
 **OpenJTalk** es un motor de síntesis de voz (Text-To-Speech / TTS) fonético open-source desarrollado por el *Nagoya Institute of Technology*. A diferencia de las APIs comerciales en la nube, OpenJTalk se ejecuta **100% en tu propia computadora en local**, sin requerir conexión a internet ni generar costos de API.
 
@@ -508,7 +517,11 @@ Al ejecutar la app en distintos entornos de desarrollo, la URL para conectar al 
 ---
 
 #### Código del Microservicio Local en Node.js (`pokedex-tts-server/server.js`):
-Crea el archivo `server.js` dentro de la carpeta `pokedex-tts-server/`. Este script detecta automáticamente tu sistema operativo (**Fedora Linux, macOS o Windows**), localiza el diccionario y las voces HTS, realiza la conversión fonética con `wanakana` y expone el endpoint `/api/tts`:
+El archivo `server.js` ya existe en la carpeta del microservicio. Este script
+detecta automáticamente el sistema operativo (**Fedora Linux, macOS o Windows**),
+localiza el diccionario y las voces HTS, realiza la conversión fonética con
+`wanakana` y expone el endpoint `/api/tts`. No ejecutes los bloques históricos
+que aparecen más abajo como si fueran comandos de terminal.
 
 ```javascript
 const express = require('express');
@@ -801,21 +814,31 @@ app.post('/api/vision/identify', async (req, res) => {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
   try {
-    // 1. Análisis Multimodal de Alta Precisión con Vision API (si GEMINI_API_KEY está configurada)
+    // 1. Análisis Multimodal de Alta Precisión con Gemini Vision
     if (process.env.GEMINI_API_KEY && GoogleGenAI) {
       const ai = new GoogleGenAI({});
-      const prompt = `Actúa como el escáner biométrico de una Pokédex. Analiza la imagen adjunta y determina qué Pokémon de la Primera Generación (#001 al #151 de Kanto) aparece en la imagen, ya sea un juguete, muñeco físico, figura 3D, peluche, carta coleccionable, dibujo o imagen en pantalla.
-Responde ÚNICAMENTE un JSON con este formato exacto:
+      const prompt = `Actúa como el escáner biométrico de alta precisión de una Pokédex de Primera Generación (Kanto #001 al #151).
+Analiza detalladamente la imagen adjunta. El objetivo puede ser:
+- Un peluche o muñeco físico de un Pokémon.
+- Un juguete, figura de acción o figura impresa en 3D.
+- Una carta coleccionable TCG, pegatina o dibujo.
+- Una imagen o fotografía en otra pantalla o impresa.
+
+Identifica si en la imagen aparece claramente alguno de los 151 Pokémon originales de Kanto (#001 Bulbasaur a #151 Mew).
+Si la imagen solo muestra una persona humana, un fondo, una habitación, una pared, o ningún Pokémon reconocible de Kanto, responde con pokemonId: 0 y confidence: 0.
+
+Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
 {
-  "pokemonId": <número entero entre 1 y 151>,
-  "name": "<nombre en inglés en minúsculas, ej: pikachu, charmander, squirtle, snorlax, gengar>",
-  "displayName": "<nombre formateado>",
+  "pokemonId": <número entero entre 1 y 151; o 0 si no hay ningún Pokémon>,
+  "name": "<nombre oficial en inglés en minúsculas, ej: pikachu, charmander, squirtle, snorlax, gengar; o 'none'>",
+  "displayName": "<nombre con mayúscula inicial, ej: Pikachu; o 'Ninguno'>",
   "confidence": <número decimal entre 0.0 y 1.0>,
-  "description": "<descripción breve de lo que se observa, ej: Figura física de Pikachu amarillo con mejillas rojas>"
+  "description": "<descripción breve de lo que se observa y por qué coincide o por qué no se detecta>"
 }`;
 
+      const modelName = process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite';
       const visionResponse = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: modelName,
         contents: [
           {
             role: 'user',
@@ -829,25 +852,22 @@ Responde ÚNICAMENTE un JSON con este formato exacto:
       });
 
       const parsed = JSON.parse(visionResponse.text);
-      if (parsed.pokemonId >= 1 && parsed.pokemonId <= 151) {
-        console.log(`[Vision API] Juguete/Objeto identificado: ${parsed.displayName} (#${parsed.pokemonId}) - Certeza: ${Math.round(parsed.confidence * 100)}%`);
-        return res.json({ success: true, ...parsed });
-      }
+      const isDetected = Number.isInteger(parsed.pokemonId) && parsed.pokemonId >= 1 && parsed.pokemonId <= 151;
+      return res.json({
+        success: true,
+        detected: isDetected,
+        pokemonId: isDetected ? parsed.pokemonId : 0,
+        name: isDetected ? parsed.name.toLowerCase() : 'none',
+        displayName: isDetected ? parsed.displayName : 'Ninguno',
+        confidence: parsed.confidence || 0,
+        description: parsed.description || (isDetected ? 'Pokémon de Kanto detectado' : 'No se detectó ningún Pokémon en la mira')
+      });
     }
 
-    // 2. Modo de Visión Local / Heurística (si no hay API key externa):
-    console.log('[Vision Local] Analizando fotograma en modo local autónomo...');
-    return res.json({
-      success: true,
-      pokemonId: 25,
-      name: 'pikachu',
-      displayName: 'Pikachu',
-      confidence: 0.94,
-      description: 'Juguete/Figura física de Pikachu detectada mediante visión artificial'
-    });
+    return res.status(503).json({ error: 'La visión requiere GEMINI_API_KEY configurada en .env' });
   } catch (error) {
     console.error('Error al procesar visión artificial:', error);
-    return res.status(500).json({ error: 'Error en el motor de visión' });
+    return res.status(502).json({ error: 'Error en el motor de visión: ' + error.message });
   }
 });
 
@@ -1385,22 +1405,38 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Cambia el objetivo holográfico entre las criaturas emblemáticas de Kanto
+   * Dispara el escaneo manual inmediato al pulsar el botón principal
    */
-  switchTarget() {
-    const nextIdx = (this.availableTargets.indexOf(this.scanTargetId) + 1) % this.availableTargets.length;
-    this.scanTargetId = this.availableTargets[nextIdx];
-    this.scannedPokemon = null;
-    this.voiceService.stop();
+  async manualScan() {
+    await this.executeScan(false);
   }
 
   /**
-   * Genera un avistamiento aleatorio dentro del catálogo de los 151 Pokémon de Kanto (#001 a #151)
+   * Conmuta el escaneo automático continuo en tiempo real
    */
-  spawnRandomKantoPokemon() {
-    this.scanTargetId = Math.floor(Math.random() * 151) + 1;
+  toggleAutoScan() {
+    this.isAutoScanActive = !this.isAutoScanActive;
+    if (this.isAutoScanActive) {
+      this.visionStatus = 'Auto-escáner activado. Enfoca un juguete o imagen...';
+      this.scheduleAutomaticScan(1000);
+    } else {
+      if (this.autoScanTimer !== null) {
+        window.clearTimeout(this.autoScanTimer);
+        this.autoScanTimer = null;
+      }
+      this.visionStatus = 'Auto-escáner en pausa. Pulsa "ESCANEAR AHORA" para analizar.';
+    }
+  }
+
+  /**
+   * Cierra la tarjeta flotante y reanuda la búsqueda de un nuevo Pokémon
+   */
+  dismissCard() {
     this.scannedPokemon = null;
+    this.lastAutoDetectedId = null;
     this.voiceService.stop();
+    this.setReticleColor(0x00f0ff);
+    this.visionStatus = 'Listo. Apunta a un juguete, peluche o imagen de Pokémon...';
   }
 
   repeatVoice() {
@@ -1458,11 +1494,16 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     <!-- Tarjeta de Información Pixel Art Flotante -->
     @if (scannedPokemon) {
       <div class="pokemon-card-pixel nes-container is-dark with-title">
-        <p class="title">{{ scannedPokemon.pokedexNumber }} {{ scannedPokemon.name }}</p>
+        <div class="card-title-bar">
+          <p class="title">{{ scannedPokemon.pokedexNumber }} {{ scannedPokemon.name }}</p>
+          <button class="pixel-close-btn" (click)="dismissCard()" aria-label="Cerrar ficha">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
 
         <div class="card-grid">
           <div class="sprite-box">
-            <img [src]="scannedPokemon.spritePixelUrl" [alt]="scannedPokemon.name" class="pixel-sprite" />
+            <img [src]="scannedPokemon.spriteArtworkUrl || scannedPokemon.spritePixelUrl" [alt]="scannedPokemon.name" class="pixel-sprite" />
           </div>
 
           <div class="info-box">
@@ -1483,6 +1524,12 @@ export class ArPokedexPage implements OnInit, OnDestroy {
           <button class="pixel-btn is-warning" (click)="repeatVoice()">
             <ion-icon name="volume-high-outline"></ion-icon> ESCUCHAR
           </button>
+          <button class="pixel-btn is-secondary" routerLink="/pokedex-list">
+            <ion-icon name="book-outline"></ion-icon> VER POKÉDEX
+          </button>
+          <button class="pixel-btn is-secondary" (click)="dismissCard()">
+            <ion-icon name="scan-outline"></ion-icon> SEGUIR
+          </button>
         </div>
       </div>
     }
@@ -1490,17 +1537,16 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     <!-- Barra Inferior de Acciones -->
     <div class="hud-bottom">
       <div class="actions-container">
-        <button class="pixel-btn is-secondary" (click)="switchTarget()">
-          <ion-icon name="refresh-outline"></ion-icon> CAMBIAR ID #{{ scanTargetId }}
+        <!-- Control de Escáner Automático Continuo -->
+        <button class="pixel-btn" [class.is-auto-active]="isAutoScanActive" [class.is-secondary]="!isAutoScanActive" (click)="toggleAutoScan()">
+          <ion-icon [name]="isAutoScanActive ? 'checkmark-circle-outline' : 'pause-circle-outline'"></ion-icon>
+          AUTO-ESCÁNER: {{ isAutoScanActive ? 'ACTIVO (EN VIVO)' : 'PAUSADO' }}
         </button>
 
-        <button class="pixel-btn is-secondary" (click)="spawnRandomKantoPokemon()">
-          <ion-icon name="sparkles-outline"></ion-icon> ALEATORIO (1-151)
-        </button>
-
-        <button class="pixel-btn is-primary is-large" [disabled]="isScanning" (click)="scanTargetPokemon()">
+        <!-- Botón de Escaneo Inmediato / Manual -->
+        <button class="pixel-btn is-primary is-large" [disabled]="isScanning" (click)="manualScan()">
           <ion-icon name="scan-outline"></ion-icon>
-          {{ isScanning ? 'ANALIZANDO...' : 'ESCANEAR POKÉMON' }}
+          {{ isScanning ? 'ANALIZANDO IMAGEN...' : 'ESCANEAR AHORA' }}
         </button>
       </div>
     </div>
@@ -2440,7 +2486,15 @@ Verifica que las siguientes declaraciones estén presentes dentro de `<manifest>
     <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
 
-    <application ...>
+    <!-- Habilitar tráfico HTTP local (Cleartext) para conectar al microservicio de OpenJTalk y Visión -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true">
         ...
     </application>
 </manifest>
@@ -2775,12 +2829,28 @@ Sigue este ciclo para probar tu Pokédex en el navegador y en tu teléfono Andro
    npm start
    ```
    Abre `http://localhost:4200` y prueba el escaneo con la cámara web de tu ordenador.
+   La pantalla RA inicia el escaneo automáticamente cuando aparece `Cámara lista`;
+   realiza una captura inicial después de 1,5 segundos y vuelve a intentarlo cada
+   8 segundos. El botón **ESCANEAR POKÉMON** sigue disponible para forzar una
+   captura inmediata.
+
+   Para probar una imagen PNG mostrada desde el celular, mantén la imagen enfocada
+   dentro de la retícula y con suficiente luz. El navegador debe tener permiso de
+   cámara y la consola debe mostrar una solicitud `POST /api/vision/identify`.
+   Si el servidor Gemini no responde, la interfaz lo indica como modo manual y
+   conserva el ID seleccionado; no se trata de un reconocimiento automático real.
 
 2. **Compilación y Sincronización Móvil**:
    ```bash
    npm run build
    npx cap sync android
    ```
+
+   La pantalla **POKÉDEX REGISTRO** puede mostrar `CARGANDO POKÉDEX...` solo
+   durante la lectura inicial de Capacitor Preferences. Si el almacenamiento
+   del navegador no responde en 5 segundos, la pantalla cambia a un mensaje de
+   error en lugar de quedarse cargando indefinidamente. En el navegador, revisa
+   que no esté bloqueado el almacenamiento local y recarga la aplicación.
 
 3. **Verificación del servidor OpenJTalk para teléfono físico**:
    - Inicia `node server.js` en la computadora.

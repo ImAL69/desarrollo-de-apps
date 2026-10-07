@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full',
+  },
+  {
     path: 'home',
     loadComponent: () => import('./home/home.page').then((m) => m.HomePage),
   },
@@ -10,8 +15,11 @@ export const routes: Routes = [
     loadComponent: () => import('./gallery/gallery.page').then((m) => m.GalleryPage),
   },
   {
-    path: '',
-    redirectTo: 'home',
-    pathMatch: 'full',
+    path: 'ar-pokedex',
+    loadComponent: () => import('./ar-pokedex/ar-pokedex.page').then((m) => m.ArPokedexPage),
+  },
+  {
+    path: 'pokedex-list',
+    loadComponent: () => import('./pokedex-list/pokedex-list.page').then((m) => m.PokedexListPage),
   },
 ];

@@ -1,10 +1,6 @@
 # Guía Completa: Pokédex de Primera Generación (151 Pokémon) en Realidad Aumentada (RA) con PokéAPI, Síntesis de Voz (OpenJTalk / TTS) y UI Pixel Art
 
-> **Importante sobre Android:** el APK no contiene automáticamente `open_jtalk`, el diccionario NAIST-JDIC ni los modelos `.htsvoice`. Esos componentes se ejecutan en la computadora mediante el microservicio local. Para un teléfono físico usa la IP Wi-Fi de la computadora; `localhost` y `10.0.2.2` corresponden a otros escenarios.
-
-> **Nota:** Esta guía ha sido actualizada para reemplazar la mecánica de captura estilo Pokémon GO por el sistema interactivo de **Pokédex de Realidad Aumentada (RA)** enfocado exclusivamente en los **151 Pokémon originales de la Primera Generación (Kanto #001 al #151)** con escaneo biométrico de juguetes físicos, figuras 3D, cartas e imágenes mediante visión artificial, proyección 3D con Three.js, integración en vivo con la **PokéAPI**, lectura automática en voz alta con **OpenJTalk / Speech Synthesis**, base de datos persistente de descubrimientos (`???` vs. desbloqueados) y front-end retro **Pixel Art (8-bit / Game Boy)**. Documento canónico: [`GUIA_POKEDEX_REALIDAD_AUMENTADA.md`](./GUIA_POKEDEX_REALIDAD_AUMENTADA.md).
-
----
+> **Importante sobre Android:** el APK no contiene automáticamente `open_jtalk`, el diccionario NAIST-JDIC ni los modelos `.htsvoice`. En un teléfono físico, el flujo soportado es ejecutar OpenJTalk en la computadora y conectarlo por la IP Wi-Fi de esa computadora. `localhost` y `10.0.2.2` no deben usarse para un teléfono físico.
 
 Esta guía documenta detalladamente la arquitectura técnica, servicios, componentes y código paso a paso para construir una **Pokédex de campo interactiva en Realidad Aumentada (RA)** dedicada a los **151 Pokémon originales de la Primera Generación (Región de Kanto, #001 Bulbasaur a #151 Mew)** dentro de este proyecto **Ionic / Angular / Capacitor**.
 
@@ -24,7 +20,8 @@ La aplicación permite enfocar la cámara del móvil para detectar/escanear cria
 9. [Paso 7: Guía de Estilización y Front-End en Pixel Art (8-Bit Retro)](#9-paso-7-guía-de-estilización-y-front-end-en-pixel-art-8-bit-retro)
 10. [Paso 8: Vista de Registro de la Pokédex (`PokedexListPage`)](#10-paso-8-vista-de-registro-de-la-pokédex-pokedexlistpage)
 11. [Paso 9: Configuración de Rutas, Navegación y Permisos Nativos en Android](#11-paso-9-configuración-de-rutas-navegación-y-permisos-nativos-en-android)
-12. [Flujo de Compilación, Pruebas y Despliegue](#12-flujo-de-compilación-pruebas-y-despliegue)
+12. [OpenJTalk Offline Dentro del APK](#10-openjtalk-offline-dentro-del-apk)
+13. [Flujo de Compilación, Pruebas y Despliegue](#11-flujo-de-compilación-pruebas-y-despliegue)
 
 ---
 
@@ -110,17 +107,19 @@ npm install nes.css
 #### 5. Servidor / Microservicio Local de OpenJTalk en Node.js
 Para procesar la síntesis de voz con OpenJTalk en tu propia máquina en local (siguiendo la guía [`INSTALACION_OPENJTALK_LOCAL.txt`](./INSTALACION_OPENJTALK_LOCAL.txt)):
 ```bash
-# 1. Crear e ingresar a la carpeta del microservicio local
-mkdir pokedex-tts-server
-cd pokedex-tts-server
+# 1. Entrar en la carpeta real del microservicio local
+cd /home/al/openjtalk/voices/pokedex-tts-server
 
-# 2. Inicializar el paquete e instalar librerías del servidor (incluye wanakana para fonética y @google/genai para escaneo visual)
-npm init -y
-npm install express cors wanakana @google/genai
+# 2. Instalar las dependencias declaradas por el servidor
+npm install
 ```
 *Este microservicio en Node.js se ejecuta en tu computadora: convierte texto Romaji a Katakana con `wanakana`, genera voz local con `open_jtalk`, y analiza fotogramas de la cámara para reconocer juguetes, figuras 3D e imágenes de los 151 Pokémon de Kanto.*
 
-Para conectar el teléfono por Wi-Fi, configura el servidor con `app.listen(PORT, '0.0.0.0', ...)`, averigua la IP privada de la computadora y usa una URL como `http://192.168.1.15:3000/api/tts`. Permite el puerto TCP `3000` en el firewall solo para la red local y comprueba desde el teléfono `http://IP_DE_TU_PC:3000/api/health`.
+La visión multimodal solo se activa si defines `GEMINI_API_KEY`; sin esa variable
+`POST /api/vision/identify` responde HTTP 503. El endpoint no devuelve una
+identificación falsa como fallback.
+
+Para un teléfono físico, el servidor debe escuchar en `0.0.0.0`. Conecta ambos equipos a la misma red Wi-Fi, obtén la IPv4 privada de la computadora y configura la URL del servicio como `http://192.168.1.15:3000/api/tts`, reemplazando la IP de ejemplo. Permite el puerto TCP `3000` en el firewall solo para la red local y valida desde el teléfono `http://IP_DE_TU_PC:3000/api/health`.
 
 #### 6. Sincronización con el Proyecto Nativo Android
 ```bash
@@ -129,7 +128,7 @@ npx cap sync android
 npx cap open android
 ```
 
-El plugin `@capacitor-community/text-to-speech` queda dentro del APK como fallback de Android, pero no instala OpenJTalk. Para hacerlo completamente offline en el teléfono se necesita una integración Android nativa adicional con binarios por ABI, diccionario y modelo de voz; esta guía no debe interpretarse como que esa integración ya existe.
+El fallback `@capacitor-community/text-to-speech` se instala dentro del APK, pero usa el motor TTS de Android y no es OpenJTalk. Para OpenJTalk completamente offline en el celular se necesita además un plugin Android nativo con binarios por ABI, diccionario y modelo `.htsvoice`; modificar la documentación o ejecutar `npx cap sync` no crea esa integración.
 
 ---
 
@@ -439,6 +438,13 @@ export class PokemonVisionService {
 
 ### 5. Paso 3: Servidor Local Integrado: Visión Artificial + Síntesis de Voz OpenJTalk (`server.js`)
 
+> **Fuente única de verdad:** el servidor ejecutable está en
+> [`../pokedex-tts-server/server.js`](../pokedex-tts-server/server.js), sincronizado
+> con `/home/al/openjtalk/voices/pokedex-tts-server/server.js`. Esta guía y
+> `INSTALACION_OPENJTALK_LOCAL.txt` describen el mismo microservicio; no mantengas
+> copias independientes del código. La visión devuelve un error explícito si no se
+> configura Gemini; no identifica falsamente todas las imágenes como Pikachu.
+
 #### ¿Qué es OpenJTalk y cómo funciona en local?
 **OpenJTalk** es un motor de síntesis de voz (Text-To-Speech / TTS) fonético open-source desarrollado por el *Nagoya Institute of Technology*. A diferencia de las APIs comerciales en la nube, OpenJTalk se ejecuta **100% en tu propia computadora en local**, sin requerir conexión a internet ni generar costos de API.
 
@@ -511,7 +517,11 @@ Al ejecutar la app en distintos entornos de desarrollo, la URL para conectar al 
 ---
 
 #### Código del Microservicio Local en Node.js (`pokedex-tts-server/server.js`):
-Crea el archivo `server.js` dentro de la carpeta `pokedex-tts-server/`. Este script detecta automáticamente tu sistema operativo (**Fedora Linux, macOS o Windows**), localiza el diccionario y las voces HTS, realiza la conversión fonética con `wanakana` y expone el endpoint `/api/tts`:
+El archivo `server.js` ya existe en la carpeta del microservicio. Este script
+detecta automáticamente el sistema operativo (**Fedora Linux, macOS o Windows**),
+localiza el diccionario y las voces HTS, realiza la conversión fonética con
+`wanakana` y expone el endpoint `/api/tts`. No ejecutes los bloques históricos
+que aparecen más abajo como si fueran comandos de terminal.
 
 ```javascript
 const express = require('express');
@@ -804,21 +814,31 @@ app.post('/api/vision/identify', async (req, res) => {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
   try {
-    // 1. Análisis Multimodal de Alta Precisión con Vision API (si GEMINI_API_KEY está configurada)
+    // 1. Análisis Multimodal de Alta Precisión con Gemini Vision
     if (process.env.GEMINI_API_KEY && GoogleGenAI) {
       const ai = new GoogleGenAI({});
-      const prompt = `Actúa como el escáner biométrico de una Pokédex. Analiza la imagen adjunta y determina qué Pokémon de la Primera Generación (#001 al #151 de Kanto) aparece en la imagen, ya sea un juguete, muñeco físico, figura 3D, peluche, carta coleccionable, dibujo o imagen en pantalla.
-Responde ÚNICAMENTE un JSON con este formato exacto:
+      const prompt = `Actúa como el escáner biométrico de alta precisión de una Pokédex de Primera Generación (Kanto #001 al #151).
+Analiza detalladamente la imagen adjunta. El objetivo puede ser:
+- Un peluche o muñeco físico de un Pokémon.
+- Un juguete, figura de acción o figura impresa en 3D.
+- Una carta coleccionable TCG, pegatina o dibujo.
+- Una imagen o fotografía en otra pantalla o impresa.
+
+Identifica si en la imagen aparece claramente alguno de los 151 Pokémon originales de Kanto (#001 Bulbasaur a #151 Mew).
+Si la imagen solo muestra una persona humana, un fondo, una habitación, una pared, o ningún Pokémon reconocible de Kanto, responde con pokemonId: 0 y confidence: 0.
+
+Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
 {
-  "pokemonId": <número entero entre 1 y 151>,
-  "name": "<nombre en inglés en minúsculas, ej: pikachu, charmander, squirtle, snorlax, gengar>",
-  "displayName": "<nombre formateado>",
+  "pokemonId": <número entero entre 1 y 151; o 0 si no hay ningún Pokémon>,
+  "name": "<nombre oficial en inglés en minúsculas, ej: pikachu, charmander, squirtle, snorlax, gengar; o 'none'>",
+  "displayName": "<nombre con mayúscula inicial, ej: Pikachu; o 'Ninguno'>",
   "confidence": <número decimal entre 0.0 y 1.0>,
-  "description": "<descripción breve de lo que se observa, ej: Figura física de Pikachu amarillo con mejillas rojas>"
+  "description": "<descripción breve de lo que se observa y por qué coincide o por qué no se detecta>"
 }`;
 
+      const modelName = process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite';
       const visionResponse = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: modelName,
         contents: [
           {
             role: 'user',
@@ -832,25 +852,22 @@ Responde ÚNICAMENTE un JSON con este formato exacto:
       });
 
       const parsed = JSON.parse(visionResponse.text);
-      if (parsed.pokemonId >= 1 && parsed.pokemonId <= 151) {
-        console.log(`[Vision API] Juguete/Objeto identificado: ${parsed.displayName} (#${parsed.pokemonId}) - Certeza: ${Math.round(parsed.confidence * 100)}%`);
-        return res.json({ success: true, ...parsed });
-      }
+      const isDetected = Number.isInteger(parsed.pokemonId) && parsed.pokemonId >= 1 && parsed.pokemonId <= 151;
+      return res.json({
+        success: true,
+        detected: isDetected,
+        pokemonId: isDetected ? parsed.pokemonId : 0,
+        name: isDetected ? parsed.name.toLowerCase() : 'none',
+        displayName: isDetected ? parsed.displayName : 'Ninguno',
+        confidence: parsed.confidence || 0,
+        description: parsed.description || (isDetected ? 'Pokémon de Kanto detectado' : 'No se detectó ningún Pokémon en la mira')
+      });
     }
 
-    // 2. Modo de Visión Local / Heurística (si no hay API key externa):
-    console.log('[Vision Local] Analizando fotograma en modo local autónomo...');
-    return res.json({
-      success: true,
-      pokemonId: 25,
-      name: 'pikachu',
-      displayName: 'Pikachu',
-      confidence: 0.94,
-      description: 'Juguete/Figura física de Pikachu detectada mediante visión artificial'
-    });
+    return res.status(503).json({ error: 'La visión requiere GEMINI_API_KEY configurada en .env' });
   } catch (error) {
     console.error('Error al procesar visión artificial:', error);
-    return res.status(500).json({ error: 'Error en el motor de visión' });
+    return res.status(502).json({ error: 'Error en el motor de visión: ' + error.message });
   }
 });
 
@@ -1388,22 +1405,38 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Cambia el objetivo holográfico entre las criaturas emblemáticas de Kanto
+   * Dispara el escaneo manual inmediato al pulsar el botón principal
    */
-  switchTarget() {
-    const nextIdx = (this.availableTargets.indexOf(this.scanTargetId) + 1) % this.availableTargets.length;
-    this.scanTargetId = this.availableTargets[nextIdx];
-    this.scannedPokemon = null;
-    this.voiceService.stop();
+  async manualScan() {
+    await this.executeScan(false);
   }
 
   /**
-   * Genera un avistamiento aleatorio dentro del catálogo de los 151 Pokémon de Kanto (#001 a #151)
+   * Conmuta el escaneo automático continuo en tiempo real
    */
-  spawnRandomKantoPokemon() {
-    this.scanTargetId = Math.floor(Math.random() * 151) + 1;
+  toggleAutoScan() {
+    this.isAutoScanActive = !this.isAutoScanActive;
+    if (this.isAutoScanActive) {
+      this.visionStatus = 'Auto-escáner activado. Enfoca un juguete o imagen...';
+      this.scheduleAutomaticScan(1000);
+    } else {
+      if (this.autoScanTimer !== null) {
+        window.clearTimeout(this.autoScanTimer);
+        this.autoScanTimer = null;
+      }
+      this.visionStatus = 'Auto-escáner en pausa. Pulsa "ESCANEAR AHORA" para analizar.';
+    }
+  }
+
+  /**
+   * Cierra la tarjeta flotante y reanuda la búsqueda de un nuevo Pokémon
+   */
+  dismissCard() {
     this.scannedPokemon = null;
+    this.lastAutoDetectedId = null;
     this.voiceService.stop();
+    this.setReticleColor(0x00f0ff);
+    this.visionStatus = 'Listo. Apunta a un juguete, peluche o imagen de Pokémon...';
   }
 
   repeatVoice() {
@@ -1461,11 +1494,16 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     <!-- Tarjeta de Información Pixel Art Flotante -->
     @if (scannedPokemon) {
       <div class="pokemon-card-pixel nes-container is-dark with-title">
-        <p class="title">{{ scannedPokemon.pokedexNumber }} {{ scannedPokemon.name }}</p>
+        <div class="card-title-bar">
+          <p class="title">{{ scannedPokemon.pokedexNumber }} {{ scannedPokemon.name }}</p>
+          <button class="pixel-close-btn" (click)="dismissCard()" aria-label="Cerrar ficha">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
 
         <div class="card-grid">
           <div class="sprite-box">
-            <img [src]="scannedPokemon.spritePixelUrl" [alt]="scannedPokemon.name" class="pixel-sprite" />
+            <img [src]="scannedPokemon.spriteArtworkUrl || scannedPokemon.spritePixelUrl" [alt]="scannedPokemon.name" class="pixel-sprite" />
           </div>
 
           <div class="info-box">
@@ -1486,6 +1524,12 @@ export class ArPokedexPage implements OnInit, OnDestroy {
           <button class="pixel-btn is-warning" (click)="repeatVoice()">
             <ion-icon name="volume-high-outline"></ion-icon> ESCUCHAR
           </button>
+          <button class="pixel-btn is-secondary" routerLink="/pokedex-list">
+            <ion-icon name="book-outline"></ion-icon> VER POKÉDEX
+          </button>
+          <button class="pixel-btn is-secondary" (click)="dismissCard()">
+            <ion-icon name="scan-outline"></ion-icon> SEGUIR
+          </button>
         </div>
       </div>
     }
@@ -1493,17 +1537,16 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     <!-- Barra Inferior de Acciones -->
     <div class="hud-bottom">
       <div class="actions-container">
-        <button class="pixel-btn is-secondary" (click)="switchTarget()">
-          <ion-icon name="refresh-outline"></ion-icon> CAMBIAR ID #{{ scanTargetId }}
+        <!-- Control de Escáner Automático Continuo -->
+        <button class="pixel-btn" [class.is-auto-active]="isAutoScanActive" [class.is-secondary]="!isAutoScanActive" (click)="toggleAutoScan()">
+          <ion-icon [name]="isAutoScanActive ? 'checkmark-circle-outline' : 'pause-circle-outline'"></ion-icon>
+          AUTO-ESCÁNER: {{ isAutoScanActive ? 'ACTIVO (EN VIVO)' : 'PAUSADO' }}
         </button>
 
-        <button class="pixel-btn is-secondary" (click)="spawnRandomKantoPokemon()">
-          <ion-icon name="sparkles-outline"></ion-icon> ALEATORIO (1-151)
-        </button>
-
-        <button class="pixel-btn is-primary is-large" [disabled]="isScanning" (click)="scanTargetPokemon()">
+        <!-- Botón de Escaneo Inmediato / Manual -->
+        <button class="pixel-btn is-primary is-large" [disabled]="isScanning" (click)="manualScan()">
           <ion-icon name="scan-outline"></ion-icon>
-          {{ isScanning ? 'ANALIZANDO...' : 'ESCANEAR POKÉMON' }}
+          {{ isScanning ? 'ANALIZANDO IMAGEN...' : 'ESCANEAR AHORA' }}
         </button>
       </div>
     </div>
@@ -2443,7 +2486,15 @@ Verifica que las siguientes declaraciones estén presentes dentro de `<manifest>
     <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
 
-    <application ...>
+    <!-- Habilitar tráfico HTTP local (Cleartext) para conectar al microservicio de OpenJTalk y Visión -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true">
         ...
     </application>
 </manifest>
@@ -2508,7 +2559,268 @@ constructor() {
 
 ---
 
-### 10. Flujo de Compilación, Pruebas y Despliegue
+### 10. OpenJTalk Offline Dentro del APK
+
+Esta sección describe la implementación necesaria para que OpenJTalk funcione
+sin la computadora y sin conexión Wi-Fi. **No es suficiente copiar
+`open_jtalk` al proyecto web**: Android necesita un binario nativo compatible
+con la arquitectura del teléfono, sus bibliotecas, el diccionario, un modelo
+`.htsvoice` y un plugin Capacitor que invoque el motor desde Kotlin/Java.
+
+#### 10.1 Arquitectura final
+
+```text
+Angular/PokedexVoiceService
+        |
+        | Capacitor plugin: OfflineOpenJTalk.synthesize()
+        v
+Android Kotlin plugin
+        |
+        | JNI/ProcessBuilder
+        v
+libopen_jtalk.so + ejecutable o wrapper nativo
+        +-- assets/openjtalk/dic/*
+        +-- assets/openjtalk/voice/*.htsvoice
+        v
+WAV temporal en cacheDir -> MediaPlayer/AudioTrack -> altavoz
+```
+
+El plugin debe exponer como mínimo:
+
+```typescript
+export interface OfflineOpenJTalkPlugin {
+  isAvailable(): Promise<{ available: boolean; reason?: string }>;
+  synthesize(options: {
+    text: string;
+    voice?: string;
+    rate?: number;
+    pitch?: number;
+  }): Promise<{ filePath: string }>;
+  stop(): Promise<void>;
+}
+```
+
+La aplicación debe intentar primero el plugin offline y usar
+`@capacitor-community/text-to-speech` como segundo fallback. El servidor Node.js
+por Wi-Fi queda como tercer modo opcional para desarrollo y diagnóstico.
+
+#### 10.2 Preparar el entorno Android
+
+Instala Android Studio con Android SDK, NDK y CMake desde **SDK Manager**.
+Usa una versión de NDK compatible con el `build.gradle` del proyecto y conserva
+la misma versión para todas las compilaciones. Comprueba las herramientas:
+
+```bash
+adb version
+$ANDROID_HOME/ndk/<VERSION>/ndk-build --version
+cmake --version
+```
+
+Para reducir el tamaño inicial, compila al menos `arm64-v8a`, que es la ABI
+habitual de los teléfonos actuales. Añade `armeabi-v7a` si se requiere soporte
+para teléfonos antiguos. No empaquetes `x86` o `x86_64` en el APK de producción
+salvo que también se vaya a ejecutar en un emulador.
+
+#### 10.3 Compilar OpenJTalk para Android
+
+La compilación debe generar una biblioteca o ejecutable Android; un binario
+Linux de Fedora, macOS o Windows **no funciona dentro del APK**. Crea un
+proyecto NDK separado para OpenJTalk y compila `hts_engine_API`, OpenJTalk y
+las dependencias de MeCab con el toolchain de Android:
+
+```bash
+export ANDROID_NDK=$ANDROID_HOME/ndk/<VERSION>
+export TOOLCHAIN=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64
+export API=24
+
+cmake -S native/openjtalk -B native/openjtalk/build/arm64-v8a \
+  -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake" \
+  -DANDROID_ABI=arm64-v8a \
+  -DANDROID_PLATFORM=android-$API \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build native/openjtalk/build/arm64-v8a --config Release
+```
+
+Repite el proceso para cada ABI soportada y guarda los resultados en:
+
+```text
+android/app/src/main/jniLibs/arm64-v8a/libopenjtalk.so
+android/app/src/main/jniLibs/armeabi-v7a/libopenjtalk.so
+```
+
+La salida exacta depende del fork de OpenJTalk utilizado. Antes de continuar,
+verifica que la biblioteca no dependa de librerías del sistema que Android no
+incluye:
+
+```bash
+readelf -d android/app/src/main/jniLibs/arm64-v8a/libopenjtalk.so
+```
+
+Si se usa un ejecutable JNI en vez de una biblioteca, el wrapper debe llamar a
+la API nativa directamente. No se debe ejecutar un binario Linux mediante
+`Runtime.exec()`.
+
+#### 10.4 Empaquetar diccionario y modelos de voz
+
+No guardes estos archivos en `src/assets`, porque Angular los copia al
+`www/` web y no garantiza una ruta de archivo ejecutable para el plugin.
+Colócalos como assets Android:
+
+```text
+android/app/src/main/assets/openjtalk/dic/
+android/app/src/main/assets/openjtalk/voice/nitech.htsvoice
+```
+
+El diccionario NAIST-JDIC y el modelo `.htsvoice` deben estar disponibles
+durante la compilación. El plugin debe copiar una sola vez estos recursos
+desde `assets/openjtalk/` a `context.noBackupFilesDir/openjtalk/` y reutilizar
+esa copia. Nunca escribas en `assets`, porque son de solo lectura.
+
+Comprueba el tamaño antes de generar el APK:
+
+```bash
+du -sh android/app/src/main/assets/openjtalk
+```
+
+Si el modelo supera el tamaño aceptable del APK, usa un Android App Bundle,
+Play Asset Delivery o una descarga inicial explícita. Esa alternativa deja de
+ser completamente offline en la primera instalación.
+
+#### 10.5 Crear el plugin Capacitor Android
+
+La estructura mínima recomendada es:
+
+```text
+android/app/src/main/java/io/ionic/starter/openjtalk/
+  OfflineOpenJTalkPlugin.kt
+  OpenJTalkEngine.kt
+  WavPlayer.kt
+```
+
+`OfflineOpenJTalkPlugin` registra los métodos `isAvailable`, `synthesize` y
+`stop`. `OpenJTalkEngine` valida el texto, copia los assets, crea un archivo
+WAV único dentro de `cacheDir` y ejecuta la síntesis en un executor, nunca en
+el hilo principal. `WavPlayer` reproduce únicamente archivos generados por el
+plugin y elimina los temporales al terminar.
+
+El registro debe hacerse en `MainActivity` o mediante el mecanismo de plugins
+de Capacitor usado por la versión instalada:
+
+```kotlin
+class MainActivity : BridgeActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        registerPlugin(OfflineOpenJTalkPlugin::class.java)
+    }
+}
+```
+
+La llamada TypeScript debe detectar explícitamente errores:
+
+```typescript
+try {
+  const result = await OfflineOpenJTalk.synthesize({
+    text,
+    voice: 'nitech',
+    rate: 1,
+    pitch: 1.1
+  });
+  await playGeneratedWav(result.filePath);
+} catch (error) {
+  console.error('OpenJTalk offline no disponible', error);
+  await TextToSpeech.speak({ text, lang: 'es-ES', rate: 0.95, pitch: 1.15 });
+}
+```
+
+No uses `catch` vacío ni devuelvas éxito si el archivo WAV no existe, tiene
+tamaño cero o no contiene una cabecera RIFF/WAVE válida.
+
+#### 10.6 Integrar el motor en `PokedexVoiceService`
+
+El orden de resolución recomendado es:
+
+1. `OfflineOpenJTalk.isAvailable()` y síntesis local.
+2. `@capacitor-community/text-to-speech` del teléfono.
+3. Servidor OpenJTalk por Wi-Fi, si se habilitó para desarrollo.
+4. `window.speechSynthesis` como último fallback web.
+
+Registra el modo utilizado para poder diagnosticar el teléfono:
+
+```typescript
+type VoiceMode = 'offline-openjtalk' | 'android-tts' | 'wifi-openjtalk' | 'web';
+```
+
+El texto debe limitarse a una longitud razonable y el plugin debe rechazar
+entradas vacías. La voz no debe depender de `localhost`, `10.0.2.2` ni de una
+conexión de red cuando el modo offline esté disponible.
+
+#### 10.7 Configuración de Gradle y reducción de APK
+
+En `android/app/build.gradle`, conserva `minSdkVersion 24` o el mínimo exigido
+por la compilación nativa y configura las ABI de forma explícita durante las
+pruebas:
+
+```gradle
+android {
+    defaultConfig {
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+    }
+}
+```
+
+Genera APK separado por ABI si el tamaño es demasiado grande. No habilites
+`minifyEnabled` hasta que el plugin funcione y se hayan añadido reglas R8 para
+las clases JNI. La ofuscación prematura dificulta diagnosticar errores nativos.
+
+#### 10.8 Pruebas obligatorias
+
+Ejecuta las pruebas en un teléfono real, sin servidor Node.js y con Wi-Fi
+desactivado:
+
+```bash
+npm run build
+npx cap sync android
+cd android
+./gradlew clean assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb logcat | grep -i -E 'OpenJTalk|OfflineOpenJTalk|FATAL EXCEPTION'
+```
+
+Valida todos estos casos:
+
+| Caso | Resultado esperado |
+|---|---|
+| Texto japonés y nombre de Pokémon | Se genera y reproduce un WAV audible |
+| Texto vacío | Se rechaza con error visible y no se crea archivo |
+| Segunda síntesis consecutiva | Detiene o reemplaza correctamente la anterior |
+| Giro de pantalla / pausa de app | No bloquea la interfaz ni deja el audio colgado |
+| Falta de modelo o diccionario | Se informa el error y funciona el TTS de Android |
+| ABI no soportada | `isAvailable()` devuelve `false` y funciona el fallback |
+| Wi-Fi apagado | OpenJTalk offline sigue funcionando |
+| APK release | Los assets y bibliotecas están presentes |
+
+Confirma la presencia de recursos en el APK:
+
+```bash
+unzip -l android/app/build/outputs/apk/debug/app-debug.apk \
+  | grep -E 'libopenjtalk|assets/openjtalk'
+```
+
+#### 10.9 Criterio de finalización
+
+La integración se considera completa únicamente cuando un teléfono real puede
+generar y reproducir voz con Wi-Fi desactivado, el APK contiene la biblioteca,
+el diccionario y el modelo, y los fallbacks funcionan cuando falta cualquiera
+de esos recursos. Hasta que se cumplan esas pruebas, la aplicación debe seguir
+mostrando que OpenJTalk offline no está disponible y no debe presentarlo como
+una capacidad ya instalada.
+
+---
+
+### 11. Flujo de Compilación, Pruebas y Despliegue
 
 Sigue este ciclo para probar tu Pokédex en el navegador y en tu teléfono Android:
 
@@ -2517,12 +2829,28 @@ Sigue este ciclo para probar tu Pokédex en el navegador y en tu teléfono Andro
    npm start
    ```
    Abre `http://localhost:4200` y prueba el escaneo con la cámara web de tu ordenador.
+   La pantalla RA inicia el escaneo automáticamente cuando aparece `Cámara lista`;
+   realiza una captura inicial después de 1,5 segundos y vuelve a intentarlo cada
+   8 segundos. El botón **ESCANEAR POKÉMON** sigue disponible para forzar una
+   captura inmediata.
+
+   Para probar una imagen PNG mostrada desde el celular, mantén la imagen enfocada
+   dentro de la retícula y con suficiente luz. El navegador debe tener permiso de
+   cámara y la consola debe mostrar una solicitud `POST /api/vision/identify`.
+   Si el servidor Gemini no responde, la interfaz lo indica como modo manual y
+   conserva el ID seleccionado; no se trata de un reconocimiento automático real.
 
 2. **Compilación y Sincronización Móvil**:
    ```bash
    npm run build
    npx cap sync android
    ```
+
+   La pantalla **POKÉDEX REGISTRO** puede mostrar `CARGANDO POKÉDEX...` solo
+   durante la lectura inicial de Capacitor Preferences. Si el almacenamiento
+   del navegador no responde en 5 segundos, la pantalla cambia a un mensaje de
+   error en lugar de quedarse cargando indefinidamente. En el navegador, revisa
+   que no esté bloqueado el almacenamiento local y recarga la aplicación.
 
 3. **Verificación del servidor OpenJTalk para teléfono físico**:
    - Inicia `node server.js` en la computadora.
