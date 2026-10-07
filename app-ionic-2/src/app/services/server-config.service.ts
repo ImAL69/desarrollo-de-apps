@@ -20,11 +20,18 @@ export class ServerConfigService {
 
   resolve(): Promise<string> {
     if (!this.resolutionPromise) {
-      const resolution = this.resolveAvailableServer();
-      this.resolutionPromise = resolution;
-      void resolution.then(baseUrl => {
-        if (this.resolutionPromise === resolution) this.baseUrl.set(baseUrl);
+      let resolution: Promise<string>;
+      resolution = this.resolveAvailableServer().then(({ baseUrl, available }) => {
+        if (this.resolutionPromise === resolution) {
+          if (available) {
+            this.baseUrl.set(baseUrl);
+          } else {
+            this.resolutionPromise = null;
+          }
+        }
+        return baseUrl;
       });
+      this.resolutionPromise = resolution;
     }
     return this.resolutionPromise;
   }
@@ -63,7 +70,7 @@ export class ServerConfigService {
     }
   }
 
-  private async resolveAvailableServer(): Promise<string> {
+  private async resolveAvailableServer(): Promise<{ baseUrl: string; available: boolean }> {
     const candidates = this.serverCandidates();
     for (const candidate of candidates) {
       const controller = new AbortController();
@@ -71,7 +78,7 @@ export class ServerConfigService {
       try {
         const response = await fetch(`${candidate}/api/health`, { signal: controller.signal });
         if (response.ok) {
-          return candidate;
+          return { baseUrl: candidate, available: true };
         }
       } catch {
         // Continúa con la siguiente dirección candidata.
@@ -80,7 +87,7 @@ export class ServerConfigService {
       }
     }
 
-    return candidates[0];
+    return { baseUrl: candidates[0], available: false };
   }
 
   private serverCandidates(): string[] {

@@ -2872,5 +2872,6 @@ Sigue este ciclo para probar tu Pokédex en el navegador y en tu teléfono Andro
 - La lista conserva las 151 entradas, actualiza los descubrimientos al volver a entrar y permite refrescarla deslizando hacia abajo. El buscador acepta nombres e identificadores como `94` o `#094`.
 - La voz intenta reproducir primero el nombre inglés convertido a japonés por OpenJTalk y después lee los datos en español mediante Web Speech o Capacitor TTS.
 - `ServerConfigService` comparte la dirección para visión y voz. El botón ⚙ permite guardar la IP del servidor; Android prueba `localhost:3000` (compatible con `adb reverse tcp:3000 tcp:3000`) y luego `10.0.2.2:3000`. En un teléfono físico también se puede guardar la IP Wi-Fi de la computadora.
+- Android habilita contenido mixto (`android.allowMixedContent: true`) para conectar la app con el servidor HTTP local; después de actualizar, ejecuta `npm run build && npx cap sync android`.
 - Gemini puede probar `GEMINI_VISION_MODEL` y los modelos de `GEMINI_VISION_FALLBACK_MODELS`; los errores 503/429 transitorios se reintentan antes de informar saturación.
 - Las fotos se guardan en `Directory.Data` mediante Capacitor Filesystem y sus rutas se persisten con Preferences; la galería vuelve a cargar las imágenes tanto en Android como en web.

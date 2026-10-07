@@ -754,6 +754,15 @@ los modelos se saturan, responde HTTP 503 para que la app pueda reintentar.
 Los valores `OPENJTALK_*` permiten indicar rutas personalizadas; si quedan
 vacíos, el servidor utiliza sus rutas predeterminadas.
 
+En Android, `android.allowMixedContent: true` permite que el WebView de la app,
+servida desde `https://localhost`, consulte el servidor local por HTTP. Después
+de actualizar el proyecto, ejecuta desde `app-ionic-2/`:
+
+   npm run build && npx cap sync android
+
+La solicitud de visión tiene un timeout de cliente de 25 segundos para permitir
+que el servidor complete los reintentos de Gemini.
+
 En el escáner de la app, toca el botón ⚙ para introducir y guardar la IP o URL
 del equipo que ejecuta este servidor. En Android se prueban automáticamente
 `http://localhost:3000` y luego `http://10.0.2.2:3000`; con un teléfono conectado

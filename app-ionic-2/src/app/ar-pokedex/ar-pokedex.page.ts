@@ -394,6 +394,7 @@ export class ArPokedexPage implements OnInit, OnDestroy {
         const pokemon = await this.pokedexService.getPokemonInfo(visionResult.pokemonId);
         if (!this.viewActive || this.destroyed) return;
         this.scannedPokemon.set(pokemon);
+        void this.voiceService.announcePokemon(pokemon);
 
         const { isFirstTime } = await this.storageService.registerDiscoveredPokemon(pokemon);
         if (!this.viewActive || this.destroyed) return;
@@ -406,7 +407,6 @@ export class ArPokedexPage implements OnInit, OnDestroy {
           color: 'success'
         });
         await toast.present();
-        void this.voiceService.announcePokemon(pokemon);
         this.visionStatus.set(`¡${visionResult.displayName} (#${visionResult.pokemonId}) identificado!`);
       } else {
         // No se detectó ningún Pokémon de Kanto en la imagen

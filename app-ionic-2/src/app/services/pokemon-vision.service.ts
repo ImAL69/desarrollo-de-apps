@@ -29,7 +29,7 @@ export class PokemonVisionService {
 
   async identifyPokemon(imageBase64: string): Promise<PokemonVisionResult> {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 8000);
+    const timeout = window.setTimeout(() => controller.abort(), 25000);
 
     try {
       const baseUrl = await this.serverConfig.resolve();
