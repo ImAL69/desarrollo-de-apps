@@ -1,6 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, PendingTasks, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import {
   IonHeader,
@@ -11,7 +10,10 @@ import {
   IonButton,
   IonIcon,
   IonSearchbar,
-  IonModal
+  IonModal,
+  IonRefresher,
+  IonRefresherContent,
+  RefresherCustomEvent
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -32,7 +34,6 @@ import { PokemonData } from '../models/pokemon.model';
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     RouterModule,
     IonHeader,
     IonToolbar,
@@ -42,20 +43,41 @@ import { PokemonData } from '../models/pokemon.model';
     IonButton,
     IonIcon,
     IonSearchbar,
-    IonModal
+    IonModal,
+    IonRefresher,
+    IonRefresherContent
   ]
 })
 export class PokedexListPage implements OnInit {
   public storageService = inject(PokedexStorageService);
   public voiceService = inject(PokedexVoiceService);
 
-  public searchTerm = '';
-  public filterType = 'all'; // 'all', 'discovered', 'locked'
-  public selectedPokemon: PokemonData | null = null;
-  public isModalOpen = false;
-  public isLoading = true;
-  public loadError = '';
+  public searchTerm = signal('');
+  public filterType = signal<'all' | 'discovered' | 'locked'>('all');
+  public selectedPokemon = signal<PokemonData | null>(null);
+  public isModalOpen = signal(false);
+  public isLoading = signal(true);
+  public loadError = signal('');
+  public filteredPokemonList = computed(() => {
+    const search = this.searchTerm().trim().toLowerCase().replace(/^#/, '');
+    const filter = this.filterType();
+
+    return this.storageService.entries().filter(pokemon => {
+      const numericSearch = /^\d+$/.test(search) ? Number(search) : null;
+      const matchesSearch = !search ||
+        pokemon.name.toLowerCase().includes(search) ||
+        pokemon.pokedexNumber.toLowerCase().includes(search) ||
+        (numericSearch !== null && pokemon.id === numericSearch);
+
+      if (filter === 'discovered') return matchesSearch && pokemon.isDiscovered;
+      if (filter === 'locked') return matchesSearch && !pokemon.isDiscovered;
+      return matchesSearch;
+    });
+  });
+
   private router = inject(Router);
+  private pendingTasks = inject(PendingTasks);
+  private currentLoad: Promise<void> | null = null;
 
   constructor() {
     addIcons({
@@ -67,56 +89,63 @@ export class PokedexListPage implements OnInit {
     });
   }
 
-  async ngOnInit() {
-    try {
-      await Promise.race([
-        this.storageService.initPokedexDatabase(),
-        new Promise<never>((_, reject) => {
-          window.setTimeout(
-            () => reject(new Error('La inicialización de la Pokédex superó el tiempo esperado.')),
-            5000
-          );
-        })
-      ]);
-      if (this.storageService.pokedexList.length === 0) {
-        throw new Error('La Pokédex no devolvió entradas.');
-      }
-    } catch (error) {
-      this.loadError = 'No se pudo cargar la Pokédex local. Recarga la página y verifica el almacenamiento del navegador.';
-      console.error('Error cargando la Pokédex:', error);
-    } finally {
-      this.isLoading = false;
-    }
+  ngOnInit() {
+    this.pendingTasks.run(() => this.loadPokemon(false));
   }
 
-  get filteredPokemonList(): PokemonData[] {
-    return this.storageService.pokedexList.filter(p => {
-      const matchSearch =
-        p.pokedexNumber.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        p.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+  ionViewWillEnter() {
+    if (!this.currentLoad) this.pendingTasks.run(() => this.loadPokemon(true));
+  }
 
-      if (this.filterType === 'discovered') return matchSearch && p.isDiscovered;
-      if (this.filterType === 'locked') return matchSearch && !p.isDiscovered;
-      return matchSearch;
-    });
+  private async loadPokemon(reload: boolean) {
+    this.isLoading.set(true);
+    this.loadError.set('');
+    const load = (async () => {
+      try {
+        await Promise.race([
+          reload ? this.storageService.reload() : this.storageService.initPokedexDatabase(),
+          new Promise<never>((_, reject) => {
+            window.setTimeout(
+              () => reject(new Error('La inicialización de la Pokédex superó el tiempo esperado.')),
+              5000
+            );
+          })
+        ]);
+        if (this.storageService.entries().length === 0) {
+          throw new Error('La Pokédex no devolvió entradas.');
+        }
+      } catch (error) {
+        this.loadError.set('No se pudo cargar la Pokédex local. Recarga la página y verifica el almacenamiento del navegador.');
+        console.error('Error cargando la Pokédex:', error);
+      } finally {
+        this.isLoading.set(false);
+      }
+    })();
+    this.currentLoad = load;
+    await load;
+    this.currentLoad = null;
+  }
+
+  async refreshPokemon(event: RefresherCustomEvent) {
+    await this.loadPokemon(true);
+    await event.target.complete();
   }
 
   openDetails(pokemon: PokemonData) {
-    if (!pokemon.isDiscovered) return; // Si no está descubierto, no abre modal
-    this.selectedPokemon = pokemon;
-    this.isModalOpen = true;
-    this.voiceService.announcePokemon(pokemon);
+    if (!pokemon.isDiscovered) return;
+    this.selectedPokemon.set(pokemon);
+    this.isModalOpen.set(true);
+    void this.voiceService.announcePokemon(pokemon);
   }
 
   closeDetails() {
-    this.isModalOpen = false;
+    this.isModalOpen.set(false);
     this.voiceService.stop();
   }
 
   playVoice() {
-    if (this.selectedPokemon) {
-      this.voiceService.announcePokemon(this.selectedPokemon);
-    }
+    const pokemon = this.selectedPokemon();
+    if (pokemon) void this.voiceService.announcePokemon(pokemon);
   }
 
   goHome() {

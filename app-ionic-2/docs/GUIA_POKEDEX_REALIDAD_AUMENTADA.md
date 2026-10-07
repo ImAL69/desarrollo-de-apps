@@ -6,6 +6,8 @@ Esta guía documenta detalladamente la arquitectura técnica, servicios, compone
 
 La aplicación permite enfocar la cámara del móvil para detectar/escanear criaturas en el entorno real, consultar en tiempo real toda la información desde la **PokéAPI** (nombre, peso, tamaño, habilidades, tipos, estadísticas y descripción oficial de la 1ª Gen), reproducir en voz alta la ficha técnica mediante **OpenJTalk / Síntesis de Voz (TTS)** al estilo del anime clásico, almacenar el registro de las 151 criaturas descubiertas vs. no descubiertas en una base de datos local persistente, y personalizar toda la interfaz con una estética retro **Pixel Art (8-bit / Game Boy / NES)**.
 
+> **Nota sobre los ejemplos de código:** algunos fragmentos de esta guía son históricos y pueden no coincidir con la implementación actual. El código vigente está en `src/` y sustituye a esos ejemplos; el servidor vigente está en `pokedex-tts-server/server.js`.
+
 ---
 
 ### Índice de Contenidos
@@ -2862,3 +2864,13 @@ Sigue este ciclo para probar tu Pokédex en el navegador y en tu teléfono Andro
    npx cap open android
    ```
    En Android Studio, conecta tu dispositivo por USB con *Depuración USB habilitada* y pulsa **Run 'app'** (ícono verde de Play ▶) para disfrutar de la experiencia de Realidad Aumentada con giroscopio real.
+
+## Cambios recientes: Pokédex funcional (Kanto #001–#151)
+
+- La aplicación Angular funciona sin Zone.js: las vistas y los servicios usan señales reactivas para reflejar los cambios asíncronos del escaneo, almacenamiento, voz y galería.
+- El escáner de cámara trasera reconoce los 151 Pokémon de Kanto. Al completar una identificación, muestra inmediatamente la ficha con nombre, número, tipos, altura, peso, estadísticas y descripción; la locución comienza en paralelo y el hallazgo se registra de forma persistente.
+- La lista conserva las 151 entradas, actualiza los descubrimientos al volver a entrar y permite refrescarla deslizando hacia abajo. El buscador acepta nombres e identificadores como `94` o `#094`.
+- La voz intenta reproducir primero el nombre inglés convertido a japonés por OpenJTalk y después lee los datos en español mediante Web Speech o Capacitor TTS.
+- `ServerConfigService` comparte la dirección para visión y voz. El botón ⚙ permite guardar la IP del servidor; Android prueba `localhost:3000` (compatible con `adb reverse tcp:3000 tcp:3000`) y luego `10.0.2.2:3000`. En un teléfono físico también se puede guardar la IP Wi-Fi de la computadora.
+- Gemini puede probar `GEMINI_VISION_MODEL` y los modelos de `GEMINI_VISION_FALLBACK_MODELS`; los errores 503/429 transitorios se reintentan antes de informar saturación.
+- Las fotos se guardan en `Directory.Data` mediante Capacitor Filesystem y sus rutas se persisten con Preferences; la galería vuelve a cargar las imágenes tanto en Android como en web.

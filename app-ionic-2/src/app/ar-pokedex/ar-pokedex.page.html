@@ -16,6 +16,10 @@
         <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
 
+      <ion-button fill="clear" class="pixel-btn-circle" (click)="configureServer()" aria-label="Configurar servidor">
+        <ion-icon slot="icon-only" name="settings-outline"></ion-icon>
+      </ion-button>
+
       <div class="pokedex-led-cluster">
         <div class="big-blue-led"></div>
         <div class="small-led red-led"></div>
@@ -25,20 +29,23 @@
 
       <ion-button fill="clear" class="pixel-btn-badge" (click)="openPokedexList()">
         <ion-icon slot="start" name="book-outline"></ion-icon>
-        {{ storageService.getDiscoveredCount() }}/151
+        {{ storageService.discoveredCount() }}/151
       </ion-button>
     </div>
 
-    <div class="camera-status" [class.error]="cameraError">
-      {{ cameraError || cameraStatus }}
+    <div class="camera-status" [class.error]="cameraError()">
+      {{ cameraError() || cameraStatus() }}
     </div>
-    @if (visionStatus) {
-      <div class="vision-status">{{ visionStatus }}</div>
+    @if (visionStatus()) {
+      <div class="vision-status">{{ visionStatus() }}</div>
+    }
+    @if (serverStatus() !== 'Servidor sin comprobar') {
+      <div class="vision-status">{{ serverStatus() }}</div>
     }
 
     <!-- Visor Central con Retícula -->
     <div class="hud-center">
-      <div class="pixel-crosshair" [class.scanning]="isScanning">
+      <div class="pixel-crosshair" [class.scanning]="isScanning()">
         <div class="corner top-left"></div>
         <div class="corner top-right"></div>
         <div class="corner bottom-left"></div>
@@ -48,10 +55,10 @@
     </div>
 
     <!-- Tarjeta de Información Pixel Art Flotante -->
-    @if (scannedPokemon) {
+    @if (scannedPokemon(); as pokemon) {
       <div class="pokemon-card-pixel nes-container is-dark with-title">
         <div class="card-title-bar">
-          <p class="title">{{ scannedPokemon.pokedexNumber }} {{ scannedPokemon.name }}</p>
+          <p class="title">{{ pokemon.pokedexNumber }} {{ pokemon.name }}</p>
           <button class="pixel-close-btn" (click)="dismissCard()" aria-label="Cerrar ficha">
             <ion-icon name="close-outline"></ion-icon>
           </button>
@@ -59,20 +66,25 @@
 
         <div class="card-grid">
           <div class="sprite-box">
-            <img [src]="scannedPokemon.spriteArtworkUrl || scannedPokemon.spritePixelUrl" [alt]="scannedPokemon.name" class="pixel-sprite" />
+            <img [src]="pokemon.spriteArtworkUrl || pokemon.spritePixelUrl" [alt]="pokemon.name" class="pixel-sprite" />
           </div>
 
           <div class="info-box">
             <div class="types-row">
-              @for (t of scannedPokemon.types; track t.name) {
+              @for (t of pokemon.types; track t.name) {
                 <span class="pixel-badge" [style.backgroundColor]="t.bgPixel" [style.borderColor]="t.color">
                   {{ t.name }}
                 </span>
               }
             </div>
 
-            <p class="stat-line">ALT: {{ scannedPokemon.heightMeters }} m | PESO: {{ scannedPokemon.weightKg }} kg</p>
-            <p class="flavor-desc">{{ scannedPokemon.description }}</p>
+            <p class="stat-line">ALT: {{ pokemon.heightMeters }} m | PESO: {{ pokemon.weightKg }} kg</p>
+            <div class="types-row">
+              @for (stat of pokemon.stats; track stat.name) {
+                <span class="pixel-badge">{{ stat.name }} {{ stat.baseStat }}</span>
+              }
+            </div>
+            <p class="flavor-desc">{{ pokemon.description }}</p>
           </div>
         </div>
 
@@ -94,15 +106,15 @@
     <div class="hud-bottom">
       <div class="actions-container">
         <!-- Control de Escáner Automático Continuo -->
-        <button class="pixel-btn" [class.is-auto-active]="isAutoScanActive" [class.is-secondary]="!isAutoScanActive" (click)="toggleAutoScan()">
-          <ion-icon [name]="isAutoScanActive ? 'checkmark-circle-outline' : 'pause-circle-outline'"></ion-icon>
-          AUTO-ESCÁNER: {{ isAutoScanActive ? 'ACTIVO (EN VIVO)' : 'PAUSADO' }}
+        <button class="pixel-btn" [class.is-auto-active]="isAutoScanActive()" [class.is-secondary]="!isAutoScanActive()" (click)="toggleAutoScan()">
+          <ion-icon [name]="isAutoScanActive() ? 'checkmark-circle-outline' : 'pause-circle-outline'"></ion-icon>
+          AUTO-ESCÁNER: {{ isAutoScanActive() ? 'ACTIVO (EN VIVO)' : 'PAUSADO' }}
         </button>
 
         <!-- Botón de Escaneo Inmediato / Manual -->
-        <button class="pixel-btn is-primary is-large" [disabled]="isScanning" (click)="manualScan()">
+        <button class="pixel-btn is-primary is-large" [disabled]="isScanning()" (click)="manualScan()">
           <ion-icon name="scan-outline"></ion-icon>
-          {{ isScanning ? 'ANALIZANDO IMAGEN...' : 'ESCANEAR AHORA' }}
+          {{ isScanning() ? 'ANALIZANDO IMAGEN...' : 'ESCANEAR AHORA' }}
         </button>
       </div>
     </div>

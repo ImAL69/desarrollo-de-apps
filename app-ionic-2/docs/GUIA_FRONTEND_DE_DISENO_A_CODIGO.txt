@@ -14,6 +14,9 @@ Este proyecto no usa React ni Vue. El frontend esta construido con:
   - NES.css 2.2.1 para los paneles y componentes visuales estilo NES/pixel art.
   - Google Fonts `Press Start 2P` y `VT323` para la tipografia retro.
 
+NOTA: Los ejemplos de esta guía son orientativos; el código vigente está en `src/`
+y sustituye a cualquier fragmento antiguo de páginas o servicios.
+
 La estructura principal es:
 
   src/app/

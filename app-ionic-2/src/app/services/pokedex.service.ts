@@ -127,6 +127,7 @@ export class PokedexService {
 
       return {
         id: rawData.id,
+        apiName: rawData.name,
         pokedexNumber: formattedNumber,
         name: rawData.name.toUpperCase(),
         formattedName: rawData.name.charAt(0).toUpperCase() + rawData.name.slice(1),

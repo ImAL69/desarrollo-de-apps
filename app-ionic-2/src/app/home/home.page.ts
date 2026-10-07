@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {
@@ -53,8 +53,8 @@ export class HomePage implements OnInit {
   public photoService = inject(PhotoService);
   private toastCtrl = inject(ToastController);
 
-  public tempPhotoWebPath: string | null = null;
-  public isReviewModalOpen = false;
+  public tempPhotoWebPath = signal<string | null>(null);
+  public isReviewModalOpen = signal(false);
 
   constructor() {
     addIcons({
@@ -79,8 +79,8 @@ export class HomePage implements OnInit {
     try {
       const captured = await this.photoService.capturePhoto();
       if (captured && captured.webPath) {
-        this.tempPhotoWebPath = captured.webPath;
-        this.isReviewModalOpen = true;
+        this.tempPhotoWebPath.set(captured.webPath);
+        this.isReviewModalOpen.set(true);
       }
     } catch (error) {
       console.error('Error al capturar foto:', error);
@@ -94,10 +94,11 @@ export class HomePage implements OnInit {
   }
 
   async saveCapturedPhoto() {
-    if (this.tempPhotoWebPath) {
-      await this.photoService.savePhotoToAppGallery(this.tempPhotoWebPath);
-      this.isReviewModalOpen = false;
-      this.tempPhotoWebPath = null;
+    const photoPath = this.tempPhotoWebPath();
+    if (photoPath) {
+      await this.photoService.savePhotoToAppGallery(photoPath);
+      this.isReviewModalOpen.set(false);
+      this.tempPhotoWebPath.set(null);
       const toast = await this.toastCtrl.create({
         message: 'Foto guardada en la galería de la app.',
         duration: 2500,
@@ -108,8 +109,8 @@ export class HomePage implements OnInit {
   }
 
   discardPhoto() {
-    this.isReviewModalOpen = false;
-    this.tempPhotoWebPath = null;
+    this.isReviewModalOpen.set(false);
+    this.tempPhotoWebPath.set(null);
   }
 
   async retakePhoto() {

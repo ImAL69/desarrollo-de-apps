@@ -253,7 +253,9 @@ Entra en la carpeta existente y usa su package.json:
 
 Paso 2: Usar el archivo `pokedex-tts-server/server.js` con soporte dual (Voz OpenJTalk + Visión Artificial):
 La implementación ejecutable única está en `server.js`. No copies los bloques
-históricos de esta guía para crear otra versión. Arranca el servidor con:
+históricos de esta guía para crear otra versión. El código vigente está en
+`pokedex-tts-server/server.js`; los ejemplos antiguos de esta sección no lo sustituyen.
+Arranca el servidor con:
    npm start
 
 El puerto predeterminado es `3000`; puedes cambiarlo con:
@@ -728,3 +730,33 @@ COMPILACIÓN Y DESPLIEGUE DEL APK:
      e) Despliega la ficha holográfica retro pixel-art con botones para escuchar,
         ir al registro completo o cerrar y seguir escaneando.
 ================================================================================
+
+10. CONFIGURACIÓN ACTUAL DEL SERVIDOR, GEMINI Y LA IP DESDE LA APP
+--------------------------------------------------------------------------------
+En `pokedex-tts-server/` copia `.env.example` a `.env` y configura las variables
+necesarias antes de iniciar `npm start`:
+
+   GEMINI_API_KEY=
+   GEMINI_VISION_MODEL=
+   GEMINI_VISION_FALLBACK_MODELS=
+   PORT=3000
+   OPENJTALK_BIN=
+   OPENJTALK_DIC=
+   OPENJTALK_VOICE=
+   OPENJTALK_MEI_VOICE=
+
+`GEMINI_API_KEY` habilita la visión. `GEMINI_VISION_MODEL` selecciona el modelo
+principal (por defecto `gemini-3.5-flash-lite`) y
+`GEMINI_VISION_FALLBACK_MODELS` acepta una lista de modelos separada por comas.
+Ante respuestas transitorias 503/429 o mensajes de saturación, el servidor
+intenta hasta tres veces cada modelo, con esperas de 600 ms y 1500 ms. Si todos
+los modelos se saturan, responde HTTP 503 para que la app pueda reintentar.
+Los valores `OPENJTALK_*` permiten indicar rutas personalizadas; si quedan
+vacíos, el servidor utiliza sus rutas predeterminadas.
+
+En el escáner de la app, toca el botón ⚙ para introducir y guardar la IP o URL
+del equipo que ejecuta este servidor. En Android se prueban automáticamente
+`http://localhost:3000` y luego `http://10.0.2.2:3000`; con un teléfono conectado
+por USB, `adb reverse tcp:3000 tcp:3000` habilita la primera dirección. En un
+teléfono físico conectado por Wi-Fi, guarda la IP local de la computadora,
+por ejemplo `192.168.1.15`; el puerto se asume como 3000 si no se indica.

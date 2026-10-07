@@ -5,5 +5,6 @@ export interface PokemonVisionResult {
   displayName: string;      // Nombre formateado (ej: 'Pikachu') o 'Ninguno'
   confidence: number;       // Nivel de confianza de 0.0 a 1.0 (ej: 0.95)
   source: 'server_vision' | 'client_fallback' | 'manual_target';
+  errorKind?: 'busy' | 'offline' | 'invalid';
   details?: string;         // Descripción técnica del objeto reconocido
 }

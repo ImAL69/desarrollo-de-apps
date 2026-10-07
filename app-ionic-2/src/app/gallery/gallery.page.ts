@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {
@@ -58,8 +58,8 @@ export class GalleryPage implements OnInit {
   private alertCtrl = inject(AlertController);
   private toastCtrl = inject(ToastController);
 
-  public selectedPhoto: UserPhoto | null = null;
-  public isModalOpen = false;
+  public selectedPhoto = signal<UserPhoto | null>(null);
+  public isModalOpen = signal(false);
 
   constructor() {
     addIcons({
@@ -76,13 +76,13 @@ export class GalleryPage implements OnInit {
   }
 
   openPhotoModal(photo: UserPhoto) {
-    this.selectedPhoto = photo;
-    this.isModalOpen = true;
+    this.selectedPhoto.set(photo);
+    this.isModalOpen.set(true);
   }
 
   closePhotoModal() {
-    this.isModalOpen = false;
-    this.selectedPhoto = null;
+    this.isModalOpen.set(false);
+    this.selectedPhoto.set(null);
   }
 
   async confirmDelete(photo: UserPhoto) {
