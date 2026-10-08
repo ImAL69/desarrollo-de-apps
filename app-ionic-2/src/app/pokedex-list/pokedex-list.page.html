@@ -15,36 +15,41 @@
 </ion-header>
 
 <ion-content class="pokedex-list-content">
-  @if (isLoading) {
+  <ion-refresher slot="fixed" (ionRefresh)="refreshPokemon($event)">
+    <ion-refresher-content pullingText="Desliza para actualizar" refreshingSpinner="bubbles"></ion-refresher-content>
+  </ion-refresher>
+
+  @if (isLoading()) {
     <div class="list-state">CARGANDO POKÉDEX...</div>
-  } @else if (loadError) {
-    <div class="list-state error">{{ loadError }}</div>
+  } @else if (loadError()) {
+    <div class="list-state error">{{ loadError() }}</div>
   } @else {
   <!-- Panel de Estadísticas y Filtros -->
   <div class="filter-panel nes-container is-dark">
     <div class="stats-row">
-      <span>VISTOS: {{ storageService.getDiscoveredCount() }} / {{ storageService.totalPokemons }}</span>
+      <span>VISTOS: {{ storageService.discoveredCount() }} / {{ storageService.totalPokemons }}</span>
       <div class="progress-bar-pixel">
-        <div class="progress-fill" [style.width.%]="(storageService.getDiscoveredCount() / storageService.totalPokemons) * 100"></div>
+        <div class="progress-fill" [style.width.%]="(storageService.discoveredCount() / storageService.totalPokemons) * 100"></div>
       </div>
     </div>
 
     <ion-searchbar
-      [(ngModel)]="searchTerm"
+      [value]="searchTerm()"
+      (ionInput)="searchTerm.set($any($event).detail.value ?? '')"
       placeholder="Buscar por #ID o Nombre..."
       class="pixel-searchbar"
     ></ion-searchbar>
 
     <div class="filter-chips">
-      <button class="pixel-chip" [class.active]="filterType === 'all'" (click)="filterType = 'all'">TODOS</button>
-      <button class="pixel-chip" [class.active]="filterType === 'discovered'" (click)="filterType = 'discovered'">DESCUBIERTOS</button>
-      <button class="pixel-chip" [class.active]="filterType === 'locked'" (click)="filterType = 'locked'">BLOQUEADOS</button>
+      <button class="pixel-chip" [class.active]="filterType() === 'all'" (click)="filterType.set('all')">TODOS</button>
+      <button class="pixel-chip" [class.active]="filterType() === 'discovered'" (click)="filterType.set('discovered')">DESCUBIERTOS</button>
+      <button class="pixel-chip" [class.active]="filterType() === 'locked'" (click)="filterType.set('locked')">BLOQUEADOS</button>
     </div>
   </div>
 
   <!-- Cuadrícula Pixel Art de Entradas -->
   <div class="pokedex-grid">
-    @for (pokemon of filteredPokemonList; track pokemon.id) {
+    @for (pokemon of filteredPokemonList(); track pokemon.id) {
       <div
         class="pokemon-cell"
         [class.is-locked]="!pokemon.isDiscovered"
@@ -79,41 +84,41 @@
   }
 
   <!-- Modal Detallado de Entrada Descubierta -->
-  <ion-modal [isOpen]="isModalOpen" (didDismiss)="closeDetails()" class="pixel-modal">
+  <ion-modal [isOpen]="isModalOpen()" (didDismiss)="closeDetails()" class="pixel-modal">
     <ng-template>
-      @if (selectedPokemon) {
+      @if (selectedPokemon(); as pokemon) {
         <div class="pixel-modal-content nes-container is-dark">
           <div class="modal-header">
-            <h3>{{ selectedPokemon.pokedexNumber }} {{ selectedPokemon.name }}</h3>
+            <h3>{{ pokemon.pokedexNumber }} {{ pokemon.name }}</h3>
             <button class="pixel-btn is-secondary" (click)="closeDetails()">
               <ion-icon name="close-outline"></ion-icon>
             </button>
           </div>
 
           <div class="modal-artwork-box">
-            <img [src]="selectedPokemon.spriteArtworkUrl" [alt]="selectedPokemon.name" class="modal-artwork" />
+            <img [src]="pokemon.spriteArtworkUrl" [alt]="pokemon.name" class="modal-artwork" />
           </div>
 
           <div class="modal-info">
             <div class="types-row">
-              @for (t of selectedPokemon.types; track t.name) {
+              @for (t of pokemon.types; track t.name) {
                 <span class="pixel-badge" [style.backgroundColor]="t.bgPixel" [style.borderColor]="t.color">
                   {{ t.name }}
                 </span>
               }
             </div>
 
-            <p class="data-text">ALTURA: {{ selectedPokemon.heightMeters }} M</p>
-            <p class="data-text">PESO: {{ selectedPokemon.weightKg }} KG</p>
-            <p class="data-text">DESCUBIERTO: {{ selectedPokemon.discoveredAt }}</p>
+            <p class="data-text">ALTURA: {{ pokemon.heightMeters }} M</p>
+            <p class="data-text">PESO: {{ pokemon.weightKg }} KG</p>
+            <p class="data-text">DESCUBIERTO: {{ pokemon.discoveredAt }}</p>
 
             <div class="description-lcd">
-              <p>{{ selectedPokemon.description }}</p>
+              <p>{{ pokemon.description }}</p>
             </div>
 
             <div class="stats-section">
               <h4>ESTADÍSTICAS BASE</h4>
-              @for (s of selectedPokemon.stats; track s.name) {
+              @for (s of pokemon.stats; track s.name) {
                 <div class="stat-bar-row">
                   <span class="stat-name">{{ s.name }}</span>
                   <div class="bar-track">

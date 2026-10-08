@@ -102,6 +102,27 @@ function numericOption(value, fallback, min, max) {
   return Number.isFinite(number) && number >= min && number <= max ? number : fallback;
 }
 
+function isRetryableVisionError(error) {
+  const status = Number(error?.status ?? error?.statusCode ?? error?.code);
+  const message = String(error?.message || error || '');
+  return [503, 429].includes(status) ||
+    /UNAVAILABLE|RESOURCE_EXHAUSTED|high demand|overloaded/i.test(message);
+}
+
+function parseVisionJson(text) {
+  const cleanText = String(text || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
+  const start = cleanText.indexOf('{');
+  const end = cleanText.lastIndexOf('}');
+  return JSON.parse(start >= 0 && end > start ? cleanText.slice(start, end + 1) : cleanText);
+}
+
+function wait(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
 function runOpenJTalk(text, voice, rate, pitch, outputFile) {
   return new Promise((resolve, reject) => {
     const child = spawn(openJtalkBinary, [
@@ -191,29 +212,63 @@ Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
   "description": "<descripción breve de lo que se observa y por qué coincide o por qué no se detecta>"
 }`;
 
-    const modelName = process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite';
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: [{ role: 'user', parts: [
-        { inlineData: { mimeType, data } },
-        { text: prompt },
-      ] }],
-      config: { responseMimeType: 'application/json' },
-    });
-    const result = JSON.parse(response.text);
-    if (!Number.isInteger(result.pokemonId) || result.pokemonId < 0 || result.pokemonId > 151) {
+    const models = [
+      process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite',
+      ...(process.env.GEMINI_VISION_FALLBACK_MODELS || '')
+        .split(',')
+        .map(model => model.trim())
+        .filter(Boolean)
+    ];
+    let result;
+    let lastRetryableError = null;
+
+    modelLoop:
+    for (const modelName of [...new Set(models)]) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: [{ role: 'user', parts: [
+              { inlineData: { mimeType, data } },
+              { text: prompt },
+            ] }],
+            config: { responseMimeType: 'application/json' },
+          });
+          result = parseVisionJson(response.text);
+          break modelLoop;
+        } catch (error) {
+          if (!isRetryableVisionError(error)) throw error;
+          lastRetryableError = error;
+          if (attempt < 2) {
+            const delay = [600, 1500][attempt];
+            console.warn(`[Vision] ${modelName} saturado; reintento ${attempt + 1}/2 en ${delay} ms`);
+            await wait(delay);
+          }
+        }
+      }
+    }
+
+    if (!result && lastRetryableError) {
+      return res.status(503).json({
+        error: 'El modelo de visión de Gemini está saturado, reintenta en unos segundos',
+        retryable: true
+      });
+    }
+
+    const pokemonId = Math.round(Number(result?.pokemonId));
+    if (!Number.isInteger(pokemonId) || pokemonId < 0 || pokemonId > 151) {
       return res.status(422).json({ error: 'La visión no devolvió un formato válido', result });
     }
 
-    const isDetected = result.pokemonId >= 1 && result.pokemonId <= 151;
+    const isDetected = pokemonId >= 1 && pokemonId <= 151;
     return res.json({
       success: true,
       detected: isDetected,
-      pokemonId: result.pokemonId,
-      name: isDetected ? result.name.toLowerCase() : 'none',
-      displayName: isDetected ? result.displayName : 'Ninguno',
-      confidence: result.confidence || 0,
-      description: result.description || (isDetected ? 'Pokémon de Kanto detectado' : 'No se detectó ningún Pokémon en la mira')
+      pokemonId,
+      name: isDetected ? String(result.name || '').toLowerCase() : 'none',
+      displayName: isDetected ? String(result.displayName || 'Ninguno') : 'Ninguno',
+      confidence: Number(result.confidence) || 0,
+      description: String(result.description || (isDetected ? 'Pokémon de Kanto detectado' : 'No se detectó ningún Pokémon en la mira'))
     });
   } catch (error) {
     console.error('[Vision]', error.message);

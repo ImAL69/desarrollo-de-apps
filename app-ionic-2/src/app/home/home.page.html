@@ -22,7 +22,7 @@
       <div class="stats-badge">
         <ion-badge color="tertiary">
           <ion-icon name="book-outline"></ion-icon>
-          {{ storageService.getDiscoveredCount() }} / {{ storageService.totalPokemons }} descubiertos
+          {{ storageService.discoveredCount() }} / {{ storageService.totalPokemons }} descubiertos
         </ion-badge>
       </div>
 
@@ -48,14 +48,14 @@
         <!-- Botón Galería -->
         <ion-button expand="block" shape="round" fill="outline" class="btn-gallery" routerLink="/gallery">
           <ion-icon slot="start" name="images-outline"></ion-icon>
-          Galería de Fotos ({{ photoService.photos.length }})
+          Galería de Fotos ({{ photoService.photos().length }})
         </ion-button>
       </div>
     </div>
   </div>
 
   <!-- Modal de Revisión de Foto -->
-  <ion-modal [isOpen]="isReviewModalOpen" (didDismiss)="discardPhoto()" class="review-modal">
+  <ion-modal [isOpen]="isReviewModalOpen()" (didDismiss)="discardPhoto()" class="review-modal">
     <ng-template>
       <ion-header>
         <ion-toolbar color="primary">
@@ -69,9 +69,9 @@
       </ion-header>
 
       <ion-content class="review-content ion-padding">
-        @if (tempPhotoWebPath) {
+        @if (tempPhotoWebPath(); as photoPath) {
           <div class="preview-box">
-            <ion-img [src]="tempPhotoWebPath" alt="Vista previa de la foto"></ion-img>
+            <ion-img [src]="photoPath" alt="Vista previa de la foto"></ion-img>
           </div>
 
           <div class="review-details">

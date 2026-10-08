@@ -11,6 +11,7 @@ export interface PokemonStat {
 
 export interface PokemonData {
   id: number;
+  apiName?: string;
   pokedexNumber: string; // Ej: "#001" al "#151"
   name: string;
   formattedName: string;

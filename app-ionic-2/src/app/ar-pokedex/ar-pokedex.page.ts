@@ -1,11 +1,12 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import {
   IonContent,
   IonButton,
   IonIcon,
-  ToastController
+  ToastController,
+  AlertController
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -17,13 +18,15 @@ import {
   refreshOutline,
   checkmarkCircleOutline,
   pauseCircleOutline,
-  closeOutline
+  closeOutline,
+  settingsOutline
 } from 'ionicons/icons';
 import * as THREE from 'three';
 import { PokedexService } from '../services/pokedex.service';
 import { PokedexVoiceService } from '../services/PokedexVoiceService';
 import { PokedexStorageService } from '../services/PokedexStorageService';
 import { PokemonVisionService } from '../services/pokemon-vision.service';
+import { ServerConfigService } from '../services/server-config.service';
 import { PokemonData } from '../models/pokemon.model';
 
 @Component({
@@ -48,15 +51,17 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   private visionService = inject(PokemonVisionService);
   public storageService = inject(PokedexStorageService);
   private toastCtrl = inject(ToastController);
+  private alertCtrl = inject(AlertController);
+  private serverConfig = inject(ServerConfigService);
   private router = inject(Router);
 
-  // Estados de escaneo y datos de la 1ª Generación (Kanto 1-151)
-  public isScanning = false;
-  public isAutoScanActive = true;
-  public scannedPokemon: PokemonData | null = null;
-  public cameraStatus = 'Iniciando cámara...';
-  public cameraError = '';
-  public visionStatus = 'Apunta a un peluche, juguete o imagen de Pokémon...';
+  public isScanning = signal(false);
+  public isAutoScanActive = signal(true);
+  public scannedPokemon = signal<PokemonData | null>(null);
+  public cameraStatus = signal('Iniciando cámara...');
+  public cameraError = signal('');
+  public visionStatus = signal('Apunta a un peluche, juguete o imagen de Pokémon...');
+  public serverStatus = signal('Servidor sin comprobar');
 
   // Three.js
   private scene!: THREE.Scene;
@@ -69,6 +74,22 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   private autoScanTimer: number | null = null;
   private lastAutoDetectedId: number | null = null;
   private destroyed = false;
+  private viewActive = true;
+  private previouslyLeft = false;
+  private cameraRequestId = 0;
+  private readonly deviceOrientationHandler = (event: DeviceOrientationEvent) => {
+    if (event.alpha !== null && event.beta !== null && event.gamma !== null && this.camera) {
+      const radians = Math.PI / 180;
+      const euler = new THREE.Euler(
+        (event.beta - 90) * radians,
+        event.alpha * radians,
+        -event.gamma * radians,
+        'YXZ'
+      );
+      this.camera.quaternion.setFromEuler(euler);
+    }
+  };
+  private readonly resizeHandler = () => this.resizeScene();
 
   constructor() {
     addIcons({
@@ -80,43 +101,85 @@ export class ArPokedexPage implements OnInit, OnDestroy {
       refreshOutline,
       checkmarkCircleOutline,
       pauseCircleOutline,
-      closeOutline
+      closeOutline,
+      settingsOutline
     });
   }
 
   async ngOnInit() {
+    await this.storageService.initPokedexDatabase().catch(error => {
+      console.error('Error inicializando la Pokédex:', error);
+    });
     await this.initCamera();
     this.initThreeScene();
     this.setupGyroscopeTracking();
+    window.addEventListener('resize', this.resizeHandler);
+    this.animate();
+  }
+
+  ionViewWillLeave() {
+    this.viewActive = false;
+    this.previouslyLeft = true;
+    this.clearAutoScanTimer();
+    this.voiceService.stop();
+    this.stopCamera();
+    cancelAnimationFrame(this.animationFrameId);
+    this.animationFrameId = 0;
+  }
+
+  ionViewDidEnter() {
+    if (!this.previouslyLeft || this.destroyed) return;
+    this.previouslyLeft = false;
+    this.viewActive = true;
+    void this.initCamera();
     this.animate();
   }
 
   ngOnDestroy() {
     this.destroyed = true;
+    this.viewActive = false;
+    this.cameraRequestId++;
     cancelAnimationFrame(this.animationFrameId);
-    if (this.autoScanTimer !== null) {
-      window.clearTimeout(this.autoScanTimer);
-    }
+    this.clearAutoScanTimer();
+    window.removeEventListener('deviceorientation', this.deviceOrientationHandler);
+    window.removeEventListener('resize', this.resizeHandler);
     this.stopCamera();
     this.voiceService.stop();
-    if (this.renderer) this.renderer.dispose();
+    this.scene?.traverse(object => {
+      const mesh = object as THREE.Mesh;
+      mesh.geometry?.dispose();
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.forEach(material => material?.dispose());
+    });
+    this.renderer?.dispose();
   }
 
   private async initCamera() {
+    this.cameraError.set('');
+    this.cameraStatus.set('Iniciando cámara...');
     if (!navigator.mediaDevices?.getUserMedia) {
-      this.cameraError = 'El navegador no permite cámara. Usa localhost o HTTPS.';
-      this.cameraStatus = 'Cámara no disponible';
+      this.cameraError.set('El navegador no permite cámara. Usa localhost o HTTPS.');
+      this.cameraStatus.set('Cámara no disponible');
       return;
     }
 
+    const requestId = ++this.cameraRequestId;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false
       });
-      this.videoRef.nativeElement.srcObject = stream;
+      if (!this.viewActive || this.destroyed || requestId !== this.cameraRequestId) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      const video = this.videoRef.nativeElement;
+      video.srcObject = stream;
       const videoReady = new Promise<void>((resolve) => {
-        const video = this.videoRef.nativeElement;
         if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
           resolve();
           return;
@@ -133,18 +196,25 @@ export class ArPokedexPage implements OnInit, OnDestroy {
         videoReady,
         new Promise<void>((resolve) => window.setTimeout(resolve, 3000))
       ]);
-      await this.videoRef.nativeElement.play().catch(() => undefined);
-      this.cameraStatus = 'Cámara lista';
+      if (!this.viewActive || this.destroyed || requestId !== this.cameraRequestId) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        return;
+      }
+      await video.play().catch(() => undefined);
+      this.cameraStatus.set('Cámara lista');
       this.scheduleAutomaticScan(1500);
     } catch (err) {
-      this.cameraStatus = 'Cámara no disponible';
-      this.cameraError = 'Permite el acceso a la cámara en el navegador y vuelve a cargar la página.';
-      console.error('Error accediendo a cámara:', err);
+      if (this.viewActive && !this.destroyed && requestId === this.cameraRequestId) {
+        this.cameraStatus.set('Cámara no disponible');
+        this.cameraError.set('Permite el acceso a la cámara en el navegador y vuelve a cargar la página.');
+        console.error('Error accediendo a cámara:', err);
+      }
     }
   }
 
   private stopCamera() {
-    const video = this.videoRef.nativeElement;
+    const video = this.videoRef?.nativeElement;
     if (video && video.srcObject) {
       (video.srcObject as MediaStream).getTracks().forEach(t => t.stop());
       video.srcObject = null;
@@ -212,16 +282,20 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   }
 
   private setupGyroscopeTracking() {
-    window.addEventListener('deviceorientation', (e) => {
-      if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
-        const rad = Math.PI / 180;
-        const euler = new THREE.Euler((e.beta - 90) * rad, e.alpha * rad, -e.gamma * rad, 'YXZ');
-        this.camera.quaternion.setFromEuler(euler);
-      }
-    });
+    window.addEventListener('deviceorientation', this.deviceOrientationHandler);
+  }
+
+  private resizeScene() {
+    if (!this.camera || !this.renderer) return;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height);
   }
 
   private animate = () => {
+    if (!this.viewActive || this.destroyed || !this.renderer || !this.scene || !this.camera) return;
     this.animationFrameId = requestAnimationFrame(this.animate);
 
     if (this.hologramGroup) {
@@ -244,16 +318,13 @@ export class ArPokedexPage implements OnInit, OnDestroy {
    * Conmuta el escaneo automático continuo en tiempo real
    */
   toggleAutoScan() {
-    this.isAutoScanActive = !this.isAutoScanActive;
-    if (this.isAutoScanActive) {
-      this.visionStatus = 'Auto-escáner activado. Enfoca un juguete o imagen...';
+    this.isAutoScanActive.update(active => !active);
+    if (this.isAutoScanActive()) {
+      this.visionStatus.set('Auto-escáner activado. Enfoca un juguete o imagen...');
       this.scheduleAutomaticScan(1000);
     } else {
-      if (this.autoScanTimer !== null) {
-        window.clearTimeout(this.autoScanTimer);
-        this.autoScanTimer = null;
-      }
-      this.visionStatus = 'Auto-escáner en pausa. Pulsa "ESCANEAR AHORA" para analizar.';
+      this.clearAutoScanTimer();
+      this.visionStatus.set('Auto-escáner en pausa. Pulsa "ESCANEAR AHORA" para analizar.');
     }
   }
 
@@ -261,24 +332,26 @@ export class ArPokedexPage implements OnInit, OnDestroy {
    * Cierra la tarjeta flotante y reanuda la búsqueda de un nuevo Pokémon
    */
   dismissCard() {
-    this.scannedPokemon = null;
+    this.scannedPokemon.set(null);
     this.lastAutoDetectedId = null;
     this.voiceService.stop();
     this.setReticleColor(0x00f0ff);
-    this.visionStatus = 'Listo. Apunta a un juguete, peluche o imagen de Pokémon...';
+    this.visionStatus.set('Listo. Apunta a un juguete, peluche o imagen de Pokémon...');
   }
 
   /**
    * Ejecuta el escaneo biométrico con Visión Artificial en tiempo real
    */
   async executeScan(isAutomatic = false) {
-    if (this.isScanning) return;
-    this.isScanning = true;
+    if (this.isScanning() || !this.viewActive) return;
+    this.isScanning.set(true);
     this.setReticleColor(0xfeca1b); // Amarillo mientras analiza
+    let nextScanDelay = 2500;
 
     try {
-      this.visionStatus = 'Capturando fotograma de la cámara...';
+      this.visionStatus.set('Capturando fotograma de la cámara...');
       const frameBase64 = await this.captureReadyFrame();
+      if (!this.viewActive || this.destroyed) return;
 
       if (!frameBase64) {
         if (!isAutomatic) {
@@ -292,26 +365,39 @@ export class ArPokedexPage implements OnInit, OnDestroy {
         return;
       }
 
-      this.visionStatus = 'Analizando objetivo con Inteligencia Artificial...';
+      this.visionStatus.set('Analizando objetivo con Inteligencia Artificial...');
       const visionResult = await this.visionService.identifyPokemon(frameBase64);
+      if (!this.viewActive || this.destroyed) return;
+
+      if (visionResult.errorKind === 'busy') {
+        this.visionStatus.set('Gemini saturado, reintentando…');
+        nextScanDelay = 6000;
+        return;
+      }
+      if (visionResult.errorKind === 'offline') {
+        this.visionStatus.set('Sin conexión con el servidor (toca ⚙ para configurar IP)');
+        return;
+      }
 
       if (visionResult.detected && visionResult.pokemonId >= 1 && visionResult.pokemonId <= 151) {
         this.setReticleColor(0x00ff88); // Verde: Pokémon detectado
 
         // Si es el mismo Pokémon ya detectado en automático, no spamear locución
-        if (isAutomatic && this.lastAutoDetectedId === visionResult.pokemonId && this.scannedPokemon) {
-          this.visionStatus = `Enfocado: ${this.scannedPokemon.name} (#${visionResult.pokemonId.toString().padStart(3, '0')})`;
+        if (isAutomatic && this.lastAutoDetectedId === visionResult.pokemonId && this.scannedPokemon()) {
+          this.visionStatus.set(`Enfocado: ${this.scannedPokemon()!.name} (#${visionResult.pokemonId.toString().padStart(3, '0')})`);
           return;
         }
 
         this.lastAutoDetectedId = visionResult.pokemonId;
-        this.visionStatus = `Cargando datos de PokéAPI para ${visionResult.displayName}...`;
+        this.visionStatus.set(`Cargando datos de PokéAPI para ${visionResult.displayName}...`);
 
         const pokemon = await this.pokedexService.getPokemonInfo(visionResult.pokemonId);
-        this.scannedPokemon = pokemon;
+        if (!this.viewActive || this.destroyed) return;
+        this.scannedPokemon.set(pokemon);
+        void this.voiceService.announcePokemon(pokemon);
 
         const { isFirstTime } = await this.storageService.registerDiscoveredPokemon(pokemon);
-        await this.voiceService.announcePokemon(pokemon);
+        if (!this.viewActive || this.destroyed) return;
 
         const toast = await this.toastCtrl.create({
           message: isFirstTime
@@ -321,7 +407,7 @@ export class ArPokedexPage implements OnInit, OnDestroy {
           color: 'success'
         });
         await toast.present();
-        this.visionStatus = `¡${visionResult.displayName} (#${visionResult.pokemonId}) identificado!`;
+        this.visionStatus.set(`¡${visionResult.displayName} (#${visionResult.pokemonId}) identificado!`);
       } else {
         // No se detectó ningún Pokémon de Kanto en la imagen
         this.setReticleColor(0x00f0ff); // Regresar a cian normal
@@ -333,9 +419,9 @@ export class ArPokedexPage implements OnInit, OnDestroy {
             color: 'medium'
           });
           await toast.present();
-          this.visionStatus = 'Ningún Pokémon detectado. Ajusta el enfoque o iluminación.';
+          this.visionStatus.set('Ningún Pokémon detectado. Ajusta el enfoque o iluminación.');
         } else {
-          this.visionStatus = 'Buscando Pokémon... Apunta a un juguete, peluche o imagen';
+          this.visionStatus.set('Buscando Pokémon... Apunta a un juguete, peluche o imagen');
         }
       }
     } catch (err) {
@@ -349,25 +435,38 @@ export class ArPokedexPage implements OnInit, OnDestroy {
         });
         await toast.present();
       }
-      this.visionStatus = 'Error al escanear. Reintentando...';
+      this.visionStatus.set('Error al escanear. Reintentando...');
     } finally {
-      this.isScanning = false;
-      if (this.isAutoScanActive && !this.destroyed) {
-        this.scheduleAutomaticScan(2500);
+      this.isScanning.set(false);
+      if (this.isAutoScanActive() && !this.destroyed && this.viewActive) {
+        this.scheduleAutomaticScan(nextScanDelay);
       }
     }
   }
 
   private scheduleAutomaticScan(delayMs: number) {
-    if (this.destroyed || this.cameraError || !this.isAutoScanActive || this.autoScanTimer !== null) return;
+    if (
+      this.destroyed ||
+      !this.viewActive ||
+      this.cameraError() ||
+      !this.isAutoScanActive() ||
+      this.autoScanTimer !== null
+    ) return;
     this.autoScanTimer = window.setTimeout(async () => {
       this.autoScanTimer = null;
-      if (this.cameraStatus === 'Cámara lista' && !this.isScanning && this.isAutoScanActive) {
+      if (this.cameraStatus() === 'Cámara lista' && !this.isScanning() && this.isAutoScanActive()) {
         await this.executeScan(true);
-      } else if (!this.destroyed && this.isAutoScanActive) {
+      } else if (!this.destroyed && this.viewActive && this.isAutoScanActive()) {
         this.scheduleAutomaticScan(2000);
       }
     }, delayMs);
+  }
+
+  private clearAutoScanTimer() {
+    if (this.autoScanTimer !== null) {
+      window.clearTimeout(this.autoScanTimer);
+      this.autoScanTimer = null;
+    }
   }
 
   private async captureReadyFrame(): Promise<string | null> {
@@ -388,8 +487,56 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   }
 
   repeatVoice() {
-    if (this.scannedPokemon) {
-      this.voiceService.announcePokemon(this.scannedPokemon);
+    const pokemon = this.scannedPokemon();
+    if (pokemon) {
+      void this.voiceService.announcePokemon(pokemon);
     }
+  }
+
+  async configureServer() {
+    const alert = await this.alertCtrl.create({
+      header: 'Configurar servidor',
+      message: 'Escribe la IP o dirección del equipo que ejecuta el servidor Pokédex.',
+      inputs: [{
+        name: 'server',
+        type: 'text',
+        value: this.serverConfig.baseUrl(),
+        placeholder: '192.168.1.15 o http://192.168.1.15:3000'
+      }],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Guardar', role: 'confirm' }
+      ]
+    });
+    await alert.present();
+    const { role, data } = await alert.onDidDismiss();
+    if (role !== 'confirm') return;
+
+    try {
+      this.serverConfig.setServer(String(data?.values?.server ?? ''));
+      await this.checkServerHealth();
+    } catch {
+      this.serverStatus.set('Dirección de servidor no válida');
+      await this.presentToast('Dirección de servidor no válida.', 'danger');
+    }
+  }
+
+  private async checkServerHealth() {
+    this.serverStatus.set('Comprobando servidor...');
+    const health = await this.serverConfig.checkHealth();
+    if (!health.ok) {
+      this.serverStatus.set('Servidor no disponible');
+      await this.presentToast('No se pudo conectar con el servidor configurado.', 'danger');
+      return;
+    }
+
+    const message = `Servidor OK · OpenJTalk: ${health.openJTalk ? 'sí' : 'no'} · Visión: ${health.vision ? 'sí' : 'no'}`;
+    this.serverStatus.set(message);
+    await this.presentToast(message, 'success');
+  }
+
+  private async presentToast(message: string, color: 'success' | 'danger') {
+    const toast = await this.toastCtrl.create({ message, duration: 3500, color });
+    await toast.present();
   }
 }

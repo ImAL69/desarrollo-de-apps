@@ -14,7 +14,7 @@
       <p>Explora y gestiona las fotos tomadas desde la aplicación</p>
     </div>
 
-    @if (photoService.photos.length === 0) {
+    @if (photoService.photos().length === 0) {
       <div class="empty-state">
         <div class="empty-icon-wrapper">
           <ion-icon name="images-outline"></ion-icon>
@@ -29,7 +29,7 @@
     } @else {
       <ion-grid class="photos-grid">
         <ion-row>
-          @for (photo of photoService.photos; track photo.id) {
+          @for (photo of photoService.photos(); track photo.id) {
             <ion-col size="6" size-md="4" size-lg="3">
               <ion-card class="photo-card" (click)="openPhotoModal(photo)">
                 <div class="img-wrapper">
@@ -50,7 +50,7 @@
   </div>
 
   <!-- Modal para ver foto en grande y opciones -->
-  <ion-modal [isOpen]="isModalOpen" (didDismiss)="closePhotoModal()" class="photo-detail-modal">
+  <ion-modal [isOpen]="isModalOpen()" (didDismiss)="closePhotoModal()" class="photo-detail-modal">
     <ng-template>
       <ion-header>
         <ion-toolbar color="primary">
@@ -63,17 +63,17 @@
         </ion-toolbar>
       </ion-header>
       <ion-content class="modal-content ion-padding">
-        @if (selectedPhoto) {
+        @if (selectedPhoto(); as photo) {
           <div class="modal-photo-wrapper">
-            <ion-img [src]="selectedPhoto.webviewPath" alt="Detalle de foto"></ion-img>
+            <ion-img [src]="photo.webviewPath" alt="Detalle de foto"></ion-img>
           </div>
           <div class="modal-info">
             <p class="date-tag">
               <ion-icon name="time-outline"></ion-icon>
-              Tomada el: {{ selectedPhoto.date }}
+              Tomada el: {{ photo.date }}
             </p>
             <div class="modal-actions">
-              <ion-button color="danger" fill="outline" expand="block" (click)="confirmDelete(selectedPhoto)">
+              <ion-button color="danger" fill="outline" expand="block" (click)="confirmDelete(photo)">
                 <ion-icon slot="start" name="trash-outline"></ion-icon>
                 Eliminar de la Galería
               </ion-button>

@@ -2,6 +2,8 @@
 
 Esta guía documenta la arquitectura completa de la aplicación Ionic con Angular y Capacitor: captura de fotos con interfaz personalizada, almacenamiento persistente en la galería interna de la app, diseño en tonos morados pasteles y el flujo para compilar y ejecutar en un teléfono físico con Android Studio.
 
+> **Nota sobre los ejemplos de código:** los fragmentos de esta guía son orientativos y pueden ser anteriores a la versión actual. La implementación vigente de Home, Gallery y PhotoService está en `src/app/`; el servicio actual persiste los archivos mediante Capacitor Filesystem.
+
 ---
 
 ### Índice

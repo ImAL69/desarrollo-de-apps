@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { PokemonData } from '../models/pokemon.model';
 
@@ -7,85 +7,112 @@ import { PokemonData } from '../models/pokemon.model';
 })
 export class PokedexStorageService {
   private readonly STORAGE_KEY = 'pokedex_registered_entries_gen1';
-  public readonly totalPokemons = 151; // Primera generación (Kanto #001 al #151)
-  public pokedexList: PokemonData[] = [];
+  public readonly totalPokemons = 151;
+  public readonly entries = signal<PokemonData[]>([]);
+  public readonly discoveredCount = computed(() =>
+    this.entries().filter(pokemon => pokemon.isDiscovered).length
+  );
+  private initializationPromise: Promise<PokemonData[]> | null = null;
 
-  /**
-   * Carga la base de datos o inicializa las 151 entradas de Kanto en estado no descubierto (???).
-   */
-  async initPokedexDatabase(): Promise<PokemonData[]> {
-    const { value } = await Preferences.get({ key: this.STORAGE_KEY });
-
-    if (value) {
-      this.pokedexList = JSON.parse(value);
-    } else {
-      // Inicializar lista con las 151 entradas ocultas "???"
-      this.pokedexList = [];
-      for (let i = 1; i <= this.totalPokemons; i++) {
-        const numStr = `#${i.toString().padStart(3, '0')}`;
-        this.pokedexList.push({
-          id: i,
-          pokedexNumber: numStr,
-          name: '???',
-          formattedName: '???',
-          heightMeters: 0,
-          weightKg: 0,
-          types: [{ name: 'DESCONOCIDO', color: '#686868', bgPixel: '#383838' }],
-          abilities: ['???'],
-          stats: [],
-          description: 'Este Pokémon de Kanto aún no ha sido escaneado ni registrado en tu Pokédex.',
-          spritePixelUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png`,
-          spriteArtworkUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${i}.png`,
-          isDiscovered: false,
-          scannedCount: 0
-        });
-      }
-      await this.saveToStorage();
+  initPokedexDatabase(): Promise<PokemonData[]> {
+    if (!this.initializationPromise) {
+      const initialization = this.loadDatabase();
+      this.initializationPromise = initialization;
+      void initialization.catch(() => {
+        if (this.initializationPromise === initialization) {
+          this.initializationPromise = null;
+        }
+      });
     }
-    return this.pokedexList;
+    return this.initializationPromise;
   }
 
-  /**
-   * Registra o actualiza un Pokémon descubierto en la base de datos.
-   */
-  async registerDiscoveredPokemon(scannedData: PokemonData): Promise<{ isFirstTime: boolean; entry: PokemonData }> {
-    const index = this.pokedexList.findIndex(p => p.id === scannedData.id);
-    let isFirstTime = true;
-
-    if (index !== -1) {
-      const existing = this.pokedexList[index];
-      isFirstTime = !existing.isDiscovered;
-
-      this.pokedexList[index] = {
-        ...scannedData,
-        isDiscovered: true,
-        discoveredAt: existing.discoveredAt || new Date().toLocaleString(),
-        scannedCount: (existing.scannedCount || 0) + 1
-      };
-    } else {
-      scannedData.isDiscovered = true;
-      scannedData.discoveredAt = new Date().toLocaleString();
-      scannedData.scannedCount = 1;
-      this.pokedexList.push(scannedData);
-      this.pokedexList.sort((a, b) => a.id - b.id);
-    }
-
-    await this.saveToStorage();
-    return { isFirstTime, entry: this.pokedexList[index !== -1 ? index : this.pokedexList.length - 1] };
+  async reload(): Promise<PokemonData[]> {
+    const entries = await this.loadDatabase();
+    this.initializationPromise = Promise.resolve(entries);
+    return entries;
   }
 
-  private async saveToStorage(): Promise<void> {
-    await Preferences.set({
-      key: this.STORAGE_KEY,
-      value: JSON.stringify(this.pokedexList)
-    });
+  async registerDiscoveredPokemon(
+    scannedData: PokemonData
+  ): Promise<{ isFirstTime: boolean; entry: PokemonData }> {
+    await this.initPokedexDatabase();
+
+    const currentEntries = this.entries();
+    const existing = currentEntries.find(pokemon => pokemon.id === scannedData.id);
+    const entry: PokemonData = {
+      ...scannedData,
+      isDiscovered: true,
+      discoveredAt: existing?.discoveredAt || new Date().toLocaleString(),
+      scannedCount: (existing?.scannedCount || 0) + 1
+    };
+    const entries = currentEntries
+      .map(pokemon => pokemon.id === entry.id ? entry : pokemon)
+      .sort((first, second) => first.id - second.id);
+
+    this.entries.set(entries);
+    await this.saveToStorage(entries);
+    return { isFirstTime: !existing?.isDiscovered, entry };
   }
 
   getDiscoveredCount(): number {
-    return this.pokedexList.filter(p => p.isDiscovered).length;
+    return this.discoveredCount();
   }
 
   getPokemonById(id: number): PokemonData | undefined {
-    return this.pokedexList.find(p => p.id === id);
+    return this.entries().find(pokemon => pokemon.id === id);
+  }
+
+  private async loadDatabase(): Promise<PokemonData[]> {
+    const { value } = await Preferences.get({ key: this.STORAGE_KEY });
+    const storedEntries: PokemonData[] = value ? JSON.parse(value) : [];
+    const entries = this.normalizeEntries(storedEntries);
+    this.entries.set(entries);
+
+    if (!value || JSON.stringify(storedEntries) !== JSON.stringify(entries)) {
+      await this.saveToStorage(entries);
+    }
+
+    return entries;
+  }
+
+  private normalizeEntries(storedEntries: PokemonData[]): PokemonData[] {
+    const entriesById = new Map<number, PokemonData>();
+    for (const entry of storedEntries) {
+      if (Number.isInteger(entry?.id) && entry.id >= 1 && entry.id <= this.totalPokemons) {
+        entriesById.set(entry.id, entry);
+      }
+    }
+
+    return Array.from({ length: this.totalPokemons }, (_, index) => {
+      const id = index + 1;
+      return { ...this.createPlaceholder(id), ...entriesById.get(id), id };
+    });
+  }
+
+  private createPlaceholder(id: number): PokemonData {
+    return {
+      id,
+      pokedexNumber: `#${id.toString().padStart(3, '0')}`,
+      name: '???',
+      formattedName: '???',
+      heightMeters: 0,
+      weightKg: 0,
+      types: [{ name: 'DESCONOCIDO', color: '#686868', bgPixel: '#383838' }],
+      abilities: ['???'],
+      stats: [],
+      description: 'Este Pokémon de Kanto aún no ha sido escaneado ni registrado en tu Pokédex.',
+      spritePixelUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+      spriteArtworkUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
+      isDiscovered: false,
+      scannedCount: 0
+    };
+  }
+
+  private async saveToStorage(entries: PokemonData[]): Promise<void> {
+    await Preferences.set({
+      key: this.STORAGE_KEY,
+      value: JSON.stringify(entries)
+    });
   }
 }
