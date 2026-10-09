@@ -213,7 +213,7 @@ Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
 }`;
 
     const models = [
-      process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite',
+      process.env.GEMINI_VISION_MODEL || 'gemini-3.1-flash-lite',
       ...(process.env.GEMINI_VISION_FALLBACK_MODELS || '')
         .split(',')
         .map(model => model.trim())

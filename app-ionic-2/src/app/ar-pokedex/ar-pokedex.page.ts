@@ -615,7 +615,7 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     }
   }
 
-  private async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'medium') {
+  private async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
     const toast = await this.toastCtrl.create({ message, duration: 3500, color });
     await toast.present();
   }
