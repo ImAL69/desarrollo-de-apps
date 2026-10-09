@@ -79,11 +79,43 @@
             </div>
 
             <p class="stat-line">ALT: {{ pokemon.heightMeters }} m | PESO: {{ pokemon.weightKg }} kg</p>
-            <div class="types-row">
-              @for (stat of pokemon.stats; track stat.name) {
-                <span class="pixel-badge">{{ stat.name }} {{ stat.baseStat }}</span>
-              }
+
+            @if (pokemon.abilities.length > 0 && pokemon.abilities[0] !== '???') {
+              <div class="info-section">
+                <span class="section-label">HABILIDADES:</span>
+                <div class="chip-row">
+                  @for (ab of pokemon.abilities; track ab) {
+                    <span class="ability-chip">{{ ab }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            <div class="info-section">
+              <span class="section-label">STATS:</span>
+              <div class="stats-mini-row">
+                @for (stat of pokemon.stats; track stat.name) {
+                  <span class="stat-chip">{{ stat.name }} {{ stat.baseStat }}</span>
+                }
+              </div>
             </div>
+
+            @if (pokemon.moves && pokemon.moves.length > 0) {
+              <div class="info-section">
+                <span class="section-label">MOVIMIENTOS (Gen 1):</span>
+                <div class="moves-mini-list">
+                  @for (mv of moveSummary(pokemon); track mv.key) {
+                    <span class="move-chip" [class.is-machine]="mv.isMachine" [class.is-natural]="mv.isNatural">
+                      {{ mv.label }}
+                    </span>
+                  }
+                  @if (pokemon.moves.length > moveDisplayLimit) {
+                    <span class="move-chip more-chip">+{{ pokemon.moves.length - moveDisplayLimit }} más…</span>
+                  }
+                </div>
+              </div>
+            }
+
             <p class="flavor-desc">{{ pokemon.description }}</p>
           </div>
         </div>
@@ -105,14 +137,28 @@
     <!-- Barra Inferior de Acciones -->
     <div class="hud-bottom">
       <div class="actions-container">
+        <!-- Botón Selección Manual (modo sin IA) -->
+        <button class="pixel-btn is-secondary" (click)="openManualSelector()">
+          <ion-icon name="hand-left-outline"></ion-icon>
+          SELECCIÓN MANUAL
+        </button>
+
         <!-- Control de Escáner Automático Continuo -->
-        <button class="pixel-btn" [class.is-auto-active]="isAutoScanActive()" [class.is-secondary]="!isAutoScanActive()" (click)="toggleAutoScan()">
+        <button
+          class="pixel-btn"
+          [class.is-auto-active]="isAutoScanActive()"
+          [class.is-secondary]="!isAutoScanActive()"
+          [disabled]="geminiAvailable() === false"
+          (click)="toggleAutoScan()">
           <ion-icon [name]="isAutoScanActive() ? 'checkmark-circle-outline' : 'pause-circle-outline'"></ion-icon>
-          AUTO-ESCÁNER: {{ isAutoScanActive() ? 'ACTIVO (EN VIVO)' : 'PAUSADO' }}
+          AUTO-ESCÁNER IA: {{ geminiAvailable() === false ? 'NO DISPONIBLE' : (isAutoScanActive() ? 'ACTIVO (EN VIVO)' : 'PAUSADO') }}
         </button>
 
         <!-- Botón de Escaneo Inmediato / Manual -->
-        <button class="pixel-btn is-primary is-large" [disabled]="isScanning()" (click)="manualScan()">
+        <button
+          class="pixel-btn is-primary is-large"
+          [disabled]="isScanning() || geminiAvailable() === false"
+          (click)="manualScan()">
           <ion-icon name="scan-outline"></ion-icon>
           {{ isScanning() ? 'ANALIZANDO IMAGEN...' : 'ESCANEAR AHORA' }}
         </button>

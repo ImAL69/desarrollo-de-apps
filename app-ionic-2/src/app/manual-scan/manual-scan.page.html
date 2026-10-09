@@ -1,0 +1,75 @@
+<ion-header class="pixel-header">
+  <ion-toolbar color="tertiary">
+    <ion-buttons slot="start">
+      <ion-button fill="clear" color="light" (click)="goBack()">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title class="pixel-title">SELECCIÓN MANUAL (151)</ion-title>
+    <ion-buttons slot="end">
+      <ion-badge color="success">{{ storageService.discoveredCount() }}/151</ion-badge>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="manual-scan-content">
+  @if (isLoading()) {
+    <div class="state-box">CARGANDO POKÉDEX...</div>
+  } @else {
+    <div class="filter-panel nes-container is-dark">
+      <p class="hint">
+        Sin escáner IA o sin servidor disponible, puedes escoger un Pokémon
+        manualmente de la lista. Se cargará su ficha completa (stats, habilidades
+        y movimientos de Gen 1) desde la caché o desde PokéAPI.
+      </p>
+
+      <ion-searchbar
+        [value]="searchTerm()"
+        (ionInput)="searchTerm.set($any($event).detail.value ?? '')"
+        placeholder="Buscar por #ID o nombre (ej: 25, pikachu, #094)..."
+        class="pixel-searchbar"
+      ></ion-searchbar>
+
+      <div class="filter-chips">
+        <button class="pixel-chip" [class.active]="filterType() === 'all'" (click)="filterType.set('all')">TODOS</button>
+        <button class="pixel-chip" [class.active]="filterType() === 'discovered'" (click)="filterType.set('discovered')">DESCUBIERTOS</button>
+        <button class="pixel-chip" [class.active]="filterType() === 'locked'" (click)="filterType.set('locked')">BLOQUEADOS</button>
+      </div>
+    </div>
+
+    <div class="pokedex-grid">
+      @for (pokemon of filteredList(); track pokemon.id) {
+        <button
+          class="pokemon-cell"
+          [class.is-locked]="!pokemon.isDiscovered"
+          [class.is-discovered]="pokemon.isDiscovered"
+          (click)="selectPokemon(pokemon.id)"
+        >
+          <span class="cell-number">{{ pokemon.pokedexNumber }}</span>
+
+          <div class="cell-sprite-wrapper">
+            <img
+              [src]="pokemon.spritePixelUrl"
+              [alt]="pokemon.name"
+              class="cell-sprite pixel-sprite"
+              [class.silhouette]="!pokemon.isDiscovered"
+            />
+          </div>
+          <span class="cell-name">{{ pokemon.name }}</span>
+
+          @if (pokemon.isDiscovered) {
+            <span class="cell-status discovered">DESCUBIERTO</span>
+          } @else {
+            <span class="cell-status locked">BLOQUEADO</span>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="bottom-actions">
+      <button class="pixel-btn is-secondary" (click)="prefetchAll()">
+        <ion-icon name="sparkles-outline"></ion-icon> PRECARGAR CACHÉ (151)
+      </button>
+    </div>
+  }
+</ion-content>

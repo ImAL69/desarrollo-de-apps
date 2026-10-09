@@ -252,6 +252,72 @@
 
         .info-box {
           flex: 1;
+          max-height: 360px;
+          overflow-y: auto;
+          padding-right: 4px;
+
+          .info-section {
+            margin-bottom: 8px;
+
+            .section-label {
+              display: block;
+              font-size: 0.55rem;
+              color: var(--pokedex-yellow);
+              margin-bottom: 4px;
+              text-shadow: 1px 1px 0 #000;
+            }
+          }
+
+          .chip-row,
+          .stats-mini-row,
+          .moves-mini-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+          }
+
+          .ability-chip,
+          .stat-chip {
+            font-size: 0.5rem;
+            padding: 3px 6px;
+            border: 2px solid #555;
+            background: #1f2a44;
+            color: #fff;
+            text-shadow: 1px 1px 0 #000;
+          }
+
+          .stat-chip {
+            background: #1f4435;
+            border-color: #00ff66;
+            color: #00ff66;
+          }
+
+          .move-chip {
+            font-size: 0.5rem;
+            padding: 3px 6px;
+            border: 2px solid #444;
+            background: #2a2a2a;
+            color: #ddd;
+            text-shadow: 1px 1px 0 #000;
+
+            &.is-machine {
+              background: #4a2a1a;
+              border-color: #f08030;
+              color: #ffaa55;
+            }
+
+            &.is-natural {
+              background: #1a3a4a;
+              border-color: #6890f0;
+              color: #99c8ff;
+            }
+
+            &.more-chip {
+              background: #444;
+              color: #aaa;
+              border-color: #888;
+            }
+          }
 
           .types-row {
             display: flex;

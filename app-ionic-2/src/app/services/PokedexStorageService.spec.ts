@@ -23,6 +23,7 @@ describe('PokedexStorageService', () => {
       types: [{ name: 'FANTASMA', color: '#705898', bgPixel: '#493963' }],
       abilities: ['CURSED BODY'],
       stats: [],
+      moves: [],
       description: 'Se oculta en las sombras.',
       spritePixelUrl: '',
       spriteArtworkUrl: '',

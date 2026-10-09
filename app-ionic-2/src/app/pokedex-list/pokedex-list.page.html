@@ -112,6 +112,17 @@
             <p class="data-text">PESO: {{ pokemon.weightKg }} KG</p>
             <p class="data-text">DESCUBIERTO: {{ pokemon.discoveredAt }}</p>
 
+            @if (pokemon.abilities.length > 0 && pokemon.abilities[0] !== '???') {
+              <div class="info-section">
+                <h4 class="section-title">HABILIDADES</h4>
+                <div class="chip-row">
+                  @for (ab of pokemon.abilities; track ab) {
+                    <span class="ability-chip">{{ ab }}</span>
+                  }
+                </div>
+              </div>
+            }
+
             <div class="description-lcd">
               <p>{{ pokemon.description }}</p>
             </div>
@@ -128,6 +139,25 @@
                 </div>
               }
             </div>
+
+            @if (pokemon.moves && pokemon.moves.length > 0) {
+              <div class="moves-section">
+                <h4>MOVIMIENTOS (GEN 1: RED / BLUE / YELLOW)</h4>
+                <div class="moves-legend">
+                  <span class="legend-chip legend-natural">AZUL = NATURALES (Sube de nivel / Huevo)</span>
+                  <span class="legend-chip legend-machine">NARANJA = MT / MO</span>
+                </div>
+                <div class="moves-grid">
+                  @for (mv of pokemon.moves; track mv.name + mv.method) {
+                    <span class="move-chip" [class.is-machine]="mv.method === 'machine'" [class.is-natural]="mv.method !== 'machine'">
+                      {{ formatMoveLabel(mv) }}
+                    </span>
+                  }
+                </div>
+              </div>
+            } @else {
+              <p class="data-text muted">Sin movimientos de Gen 1 registrados.</p>
+            }
 
             <button class="pixel-btn is-warning is-large btn-voice" (click)="playVoice()">
               <ion-icon name="volume-high-outline"></ion-icon> REPRODUCIR VOZ POKÉDEX

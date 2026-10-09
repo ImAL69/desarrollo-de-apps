@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import {
   IonContent,
   IonButton,
@@ -19,7 +19,9 @@ import {
   checkmarkCircleOutline,
   pauseCircleOutline,
   closeOutline,
-  settingsOutline
+  settingsOutline,
+  handLeftOutline,
+  wifiOutline
 } from 'ionicons/icons';
 import * as THREE from 'three';
 import { PokedexService } from '../services/pokedex.service';
@@ -27,7 +29,7 @@ import { PokedexVoiceService } from '../services/PokedexVoiceService';
 import { PokedexStorageService } from '../services/PokedexStorageService';
 import { PokemonVisionService } from '../services/pokemon-vision.service';
 import { ServerConfigService } from '../services/server-config.service';
-import { PokemonData } from '../models/pokemon.model';
+import { PokemonData, PokemonMove } from '../models/pokemon.model';
 
 @Component({
   selector: 'app-ar-pokedex',
@@ -54,6 +56,7 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   private alertCtrl = inject(AlertController);
   private serverConfig = inject(ServerConfigService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   public isScanning = signal(false);
   public isAutoScanActive = signal(true);
@@ -62,6 +65,33 @@ export class ArPokedexPage implements OnInit, OnDestroy {
   public cameraError = signal('');
   public visionStatus = signal('Apunta a un peluche, juguete o imagen de Pokémon...');
   public serverStatus = signal('Servidor sin comprobar');
+  public geminiAvailable = signal<boolean | null>(null); // null = sin comprobar
+  public readonly moveDisplayLimit = 8;
+
+  /**
+   * Convierte los movimientos en items para mostrar en la UI (resumen compacto).
+   */
+  public moveSummary(pokemon: PokemonData): Array<{ key: string; label: string; isMachine: boolean; isNatural: boolean }> {
+    if (!pokemon?.moves) return [];
+    return pokemon.moves.slice(0, this.moveDisplayLimit).map(mv => ({
+      key: `${mv.name}-${mv.method}`,
+      label: this.formatMoveLabel(mv),
+      isMachine: mv.method === 'machine',
+      isNatural: mv.method !== 'machine'
+    }));
+  }
+
+  private formatMoveLabel(mv: PokemonMove): string {
+    if (mv.method === 'level-up') {
+      return mv.level > 0 ? `Nv${mv.level} ${mv.displayName}` : mv.displayName;
+    }
+    if (mv.method === 'machine' && mv.machineKind) {
+      return `${mv.machineKind}${String(mv.machineNumber || '').padStart(2, '0')} ${mv.displayName}`;
+    }
+    if (mv.method === 'egg') return `🥚 ${mv.displayName}`;
+    if (mv.method === 'tutor') return `👨‍🏫 ${mv.displayName}`;
+    return mv.displayName;
+  }
 
   // Three.js
   private scene!: THREE.Scene;
@@ -102,7 +132,9 @@ export class ArPokedexPage implements OnInit, OnDestroy {
       checkmarkCircleOutline,
       pauseCircleOutline,
       closeOutline,
-      settingsOutline
+      settingsOutline,
+      handLeftOutline,
+      wifiOutline
     });
   }
 
@@ -115,6 +147,8 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     this.setupGyroscopeTracking();
     window.addEventListener('resize', this.resizeHandler);
     this.animate();
+    // Detecta si hay servidor con Gemini disponible para el escáner IA
+    void this.checkServerHealth();
   }
 
   ionViewWillLeave() {
@@ -133,6 +167,18 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     this.viewActive = true;
     void this.initCamera();
     this.animate();
+
+    // Modo manual: si llegamos con ?manual=ID, cargamos ese Pokémon sin IA
+    const manualId = this.route.snapshot.queryParamMap.get('manual');
+    if (manualId) {
+      const id = parseInt(manualId, 10);
+      if (Number.isInteger(id) && id >= 1 && id <= 151) {
+        void this.loadManualPokemon(id).then(() => {
+          // Limpia el query param para que no recargue al re-entrar a la página
+          void this.router.navigate(['/ar-pokedex'], { replaceUrl: true });
+        });
+      }
+    }
   }
 
   ngOnDestroy() {
@@ -526,16 +572,50 @@ export class ArPokedexPage implements OnInit, OnDestroy {
     const health = await this.serverConfig.checkHealth();
     if (!health.ok) {
       this.serverStatus.set('Servidor no disponible');
-      await this.presentToast('No se pudo conectar con el servidor configurado.', 'danger');
+      this.geminiAvailable.set(false);
+      await this.presentToast('No se pudo conectar con el servidor configurado. Modo manual activo.', 'danger');
       return;
     }
 
+    this.geminiAvailable.set(health.vision);
     const message = `Servidor OK · OpenJTalk: ${health.openJTalk ? 'sí' : 'no'} · Visión: ${health.vision ? 'sí' : 'no'}`;
     this.serverStatus.set(message);
     await this.presentToast(message, 'success');
   }
 
-  private async presentToast(message: string, color: 'success' | 'danger') {
+  /**
+   * Abre la página de selección manual de Pokémon (modo sin IA).
+   */
+  openManualSelector() {
+    void this.router.navigateByUrl('/manual-scan');
+  }
+
+  /**
+   * Carga un Pokémon desde el selector manual y lo muestra en la tarjeta AR.
+   * Se invoca desde la página ManualScanPage al pulsar sobre una entrada.
+   */
+  async loadManualPokemon(id: number) {
+    this.visionStatus.set(`Cargando datos de PokéAPI para #${id}...`);
+    try {
+      const pokemon = await this.pokedexService.getPokemonInfo(id);
+      this.scannedPokemon.set(pokemon);
+      const { isFirstTime } = await this.storageService.registerDiscoveredPokemon(pokemon);
+      void this.voiceService.announcePokemon(pokemon);
+      this.visionStatus.set(`¡${pokemon.name} seleccionado manualmente!`);
+      await this.presentToast(
+        isFirstTime
+          ? `¡Nuevo Pokémon descubierto: ${pokemon.name}!`
+          : `Datos de ${pokemon.name} actualizados.`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Error cargando Pokémon manualmente:', err);
+      this.visionStatus.set('Error al cargar los datos del Pokémon.');
+      await this.presentToast('No se pudo cargar la información de ese Pokémon.', 'danger');
+    }
+  }
+
+  private async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'medium') {
     const toast = await this.toastCtrl.create({ message, duration: 3500, color });
     await toast.present();
   }

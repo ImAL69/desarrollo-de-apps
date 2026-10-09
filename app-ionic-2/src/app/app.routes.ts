@@ -19,6 +19,10 @@ export const routes: Routes = [
     loadComponent: () => import('./ar-pokedex/ar-pokedex.page').then((m) => m.ArPokedexPage),
   },
   {
+    path: 'manual-scan',
+    loadComponent: () => import('./manual-scan/manual-scan.page').then((m) => m.ManualScanPage),
+  },
+  {
     path: 'pokedex-list',
     loadComponent: () => import('./pokedex-list/pokedex-list.page').then((m) => m.PokedexListPage),
   },
