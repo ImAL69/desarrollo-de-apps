@@ -101,6 +101,7 @@ export class PokedexStorageService {
       types: [{ name: 'DESCONOCIDO', color: '#686868', bgPixel: '#383838' }],
       abilities: ['???'],
       stats: [],
+      moves: [],
       description: 'Este Pokémon de Kanto aún no ha sido escaneado ni registrado en tu Pokédex.',
       spritePixelUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
       spriteArtworkUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,

@@ -20,9 +20,16 @@ export class PokedexVoiceService {
     const speechText = `${pokemon.formattedName}. Pokémon número ${pokemon.id} de tipo ${typeList}. Altura ${pokemon.heightMeters} metros. Peso ${pokemon.weightKg} kilogramos. ${pokemon.description}`;
 
     try {
+      // 1. Intro en japonés con OpenJTalk (anime-style)
       await this.playOpenJTalkName(name, generation);
       if (!this.isCurrent(generation)) return;
-      await this.speakSpanish(speechText, generation);
+      // 2. Descripción completa en español: pre-grabado MP3 si existe, fallback Web Speech
+      const played = await this.playPrerecordedAudio(pokemon.id, generation);
+      if (!this.isCurrent(generation)) return;
+      if (!played) {
+        // Sin MP3 disponible, narramos en español con TTS del sistema
+        await this.speakSpanish(speechText, generation);
+      }
     } finally {
       if (this.isCurrent(generation)) {
         this.isSpeaking.set(false);
@@ -94,6 +101,44 @@ export class PokedexVoiceService {
     } catch {
       // Sin OpenJTalk, la locución continúa directamente en español.
     }
+  }
+
+  /**
+   * Reproduce el MP3 pre-grabado en assets/audio/pokemon/{NNN}.mp3 si existe.
+   * Devuelve true si se reprodujo, false si el archivo no existe o falla.
+   */
+  private async playPrerecordedAudio(pokemonId: number, generation: number): Promise<boolean> {
+    if (!Number.isInteger(pokemonId) || pokemonId < 1 || pokemonId > 151) return false;
+    const paddedId = String(pokemonId).padStart(3, '0');
+    const audioPath = `assets/audio/pokemon/${paddedId}.mp3`;
+
+    return new Promise<boolean>(resolve => {
+      let settled = false;
+      const finish = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        this.audioElement.onended = null;
+        this.audioElement.onerror = null;
+        if (!result) {
+          this.audioElement.pause();
+          this.audioElement.currentTime = 0;
+        }
+        resolve(result);
+      };
+      const timeout = window.setTimeout(() => finish(false), 30000);
+
+      this.audioElement.onended = () => finish(true);
+      this.audioElement.onerror = () => finish(false);
+      this.audioElement.src = audioPath;
+      void this.audioElement.play()
+        .then(() => {
+          if (!this.isCurrent(generation)) {
+            finish(false);
+          }
+        })
+        .catch(() => finish(false));
+    });
   }
 
   private async speakSpanish(text: string, generation: number): Promise<void> {

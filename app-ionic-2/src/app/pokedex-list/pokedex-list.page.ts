@@ -25,7 +25,7 @@ import {
 } from 'ionicons/icons';
 import { PokedexStorageService } from '../services/PokedexStorageService';
 import { PokedexVoiceService } from '../services/PokedexVoiceService';
-import { PokemonData } from '../models/pokemon.model';
+import { PokemonData, PokemonMove } from '../models/pokemon.model';
 
 @Component({
   selector: 'app-pokedex-list',
@@ -146,6 +146,21 @@ export class PokedexListPage implements OnInit {
   playVoice() {
     const pokemon = this.selectedPokemon();
     if (pokemon) void this.voiceService.announcePokemon(pokemon);
+  }
+
+  /**
+   * Etiqueta legible para un movimiento (mismo formato que en la tarjeta AR).
+   */
+  formatMoveLabel(mv: PokemonMove): string {
+    if (mv.method === 'level-up') {
+      return mv.level > 0 ? `Nv${mv.level} ${mv.displayName}` : mv.displayName;
+    }
+    if (mv.method === 'machine' && mv.machineKind) {
+      return `${mv.machineKind}${String(mv.machineNumber || '').padStart(2, '0')} ${mv.displayName}`;
+    }
+    if (mv.method === 'egg') return `🥚 ${mv.displayName}`;
+    if (mv.method === 'tutor') return `👨‍🏫 ${mv.displayName}`;
+    return mv.displayName;
   }
 
   goHome() {
