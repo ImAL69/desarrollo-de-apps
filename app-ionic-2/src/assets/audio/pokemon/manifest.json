@@ -1,13 +1,31 @@
 {
-  "033": {
-    "name": "nidorino",
-    "size": 1432170,
+  "149": {
+    "name": "dragonite",
+    "size": 1929322,
     "voice": "jam",
     "speed": 0.95
   },
-  "034": {
-    "name": "nidoking",
-    "size": 1502902,
+  "150": {
+    "name": "mewtwo",
+    "size": 1521924,
+    "voice": "jam",
+    "speed": 0.95
+  },
+  "035": {
+    "name": "clefairy",
+    "size": 2072860,
+    "voice": "jam",
+    "speed": 0.95
+  },
+  "036": {
+    "name": "clefable",
+    "size": 1459034,
+    "voice": "jam",
+    "speed": 0.95
+  },
+  "094": {
+    "name": "gengar",
+    "size": 1642346,
     "voice": "jam",
     "speed": 0.95
   },
@@ -106,6 +124,12 @@
   },
   "032": {
     "size": 1337220
+  },
+  "033": {
+    "size": 1432170
+  },
+  "034": {
+    "size": 1502902
   },
   "050": {
     "size": 1609582
