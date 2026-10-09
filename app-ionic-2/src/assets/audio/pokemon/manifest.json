@@ -1,137 +1,908 @@
 {
+  "100": {
+    "name": "voltorb",
+    "size": 147648,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "101": {
+    "name": "electrode",
+    "size": 164352,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "102": {
+    "name": "exeggcute",
+    "size": 160128,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "103": {
+    "name": "exeggutor",
+    "size": 152256,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "104": {
+    "name": "cubone",
+    "size": 147456,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "105": {
+    "name": "marowak",
+    "size": 142656,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "106": {
+    "name": "hitmonlee",
+    "size": 172224,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "107": {
+    "name": "hitmonchan",
+    "size": 159936,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "108": {
+    "name": "lickitung",
+    "size": 163584,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "109": {
+    "name": "koffing",
+    "size": 138816,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "110": {
+    "name": "weezing",
+    "size": 166656,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "111": {
+    "name": "rhyhorn",
+    "size": 153408,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "112": {
+    "name": "rhydon",
+    "size": 161664,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "113": {
+    "name": "chansey",
+    "size": 165888,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "114": {
+    "name": "tangela",
+    "size": 150528,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "115": {
+    "name": "kangaskhan",
+    "size": 152448,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "116": {
+    "name": "horsea",
+    "size": 142656,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "117": {
+    "name": "seadra",
+    "size": 158016,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "118": {
+    "name": "goldeen",
+    "size": 145728,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "119": {
+    "name": "seaking",
+    "size": 154560,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "120": {
+    "name": "staryu",
+    "size": 156672,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "121": {
+    "name": "starmie",
+    "size": 149376,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "122": {
+    "name": "mr-mime",
+    "size": 173376,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "123": {
+    "name": "scyther",
+    "size": 152640,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "124": {
+    "name": "jynx",
+    "size": 158016,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "125": {
+    "name": "electabuzz",
+    "size": 153984,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "126": {
+    "name": "magmar",
+    "size": 187008,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "127": {
+    "name": "pinsir",
+    "size": 150912,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "128": {
+    "name": "tauros",
+    "size": 157824,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "129": {
+    "name": "magikarp",
+    "size": 152064,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "130": {
+    "name": "gyarados",
+    "size": 161088,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "131": {
+    "name": "lapras",
+    "size": 159168,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "132": {
+    "name": "ditto",
+    "size": 141888,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "133": {
+    "name": "eevee",
+    "size": 159360,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "134": {
+    "name": "vaporeon",
+    "size": 138624,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "135": {
+    "name": "jolteon",
+    "size": 156864,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "136": {
+    "name": "flareon",
+    "size": 161280,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "137": {
+    "name": "porygon",
+    "size": 156288,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "138": {
+    "name": "omanyte",
+    "size": 165888,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "139": {
+    "name": "omastar",
+    "size": 162816,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "140": {
+    "name": "kabuto",
+    "size": 160704,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "141": {
+    "name": "kabutops",
+    "size": 170880,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "142": {
+    "name": "aerodactyl",
+    "size": 182208,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "143": {
+    "name": "snorlax",
+    "size": 181056,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "144": {
+    "name": "articuno",
+    "size": 166272,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "145": {
+    "name": "zapdos",
+    "size": 175104,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "146": {
+    "name": "moltres",
+    "size": 147456,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "147": {
+    "name": "dratini",
+    "size": 159744,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "148": {
+    "name": "dragonair",
+    "size": 151872,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
   "149": {
     "name": "dragonite",
-    "size": 1929322,
-    "voice": "jam",
-    "speed": 0.95
+    "size": 183168,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
   "150": {
     "name": "mewtwo",
-    "size": 1521924,
-    "voice": "jam",
-    "speed": 0.95
+    "size": 140736,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "151": {
+    "name": "mew",
+    "size": 150720,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "001": {
+    "name": "bulbasaur",
+    "size": 156480,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "002": {
+    "name": "ivysaur",
+    "size": 156096,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "003": {
+    "name": "venusaur",
+    "size": 132672,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "004": {
+    "name": "charmander",
+    "size": 146880,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "005": {
+    "name": "charmeleon",
+    "size": 155712,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "006": {
+    "name": "charizard",
+    "size": 163584,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "007": {
+    "name": "squirtle",
+    "size": 144576,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "008": {
+    "name": "wartortle",
+    "size": 138816,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "009": {
+    "name": "blastoise",
+    "size": 171456,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "010": {
+    "name": "caterpie",
+    "size": 145152,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "011": {
+    "name": "metapod",
+    "size": 158976,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "012": {
+    "name": "butterfree",
+    "size": 146304,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "013": {
+    "name": "weedle",
+    "size": 170304,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "014": {
+    "name": "kakuna",
+    "size": 147648,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "015": {
+    "name": "beedrill",
+    "size": 151680,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "016": {
+    "name": "pidgey",
+    "size": 149760,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "017": {
+    "name": "pidgeotto",
+    "size": 166464,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "018": {
+    "name": "pidgeot",
+    "size": 164928,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "019": {
+    "name": "rattata",
+    "size": 152832,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "020": {
+    "name": "raticate",
+    "size": 154560,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "021": {
+    "name": "spearow",
+    "size": 154368,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "022": {
+    "name": "fearow",
+    "size": 154560,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "023": {
+    "name": "ekans",
+    "size": 145536,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "024": {
+    "name": "arbok",
+    "size": 146112,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "025": {
+    "name": "pikachu",
+    "size": 156288,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "026": {
+    "name": "raichu",
+    "size": 145344,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "027": {
+    "name": "sandshrew",
+    "size": 144960,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "028": {
+    "name": "sandslash",
+    "size": 153024,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "029": {
+    "name": "nidoran-f",
+    "size": 153408,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "030": {
+    "name": "nidorina",
+    "size": 131904,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "031": {
+    "name": "nidoqueen",
+    "size": 157632,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "032": {
+    "name": "nidoran-m",
+    "size": 152256,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "033": {
+    "name": "nidorino",
+    "size": 151488,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "034": {
+    "name": "nidoking",
+    "size": 158400,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
   "035": {
     "name": "clefairy",
-    "size": 2072860,
-    "voice": "jam",
-    "speed": 0.95
+    "size": 154944,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
   "036": {
     "name": "clefable",
-    "size": 1459034,
-    "voice": "jam",
-    "speed": 0.95
+    "size": 150528,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "037": {
+    "name": "vulpix",
+    "size": 156288,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "038": {
+    "name": "ninetales",
+    "size": 156480,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "039": {
+    "name": "jigglypuff",
+    "size": 171456,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "040": {
+    "name": "wigglytuff",
+    "size": 137472,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "041": {
+    "name": "zubat",
+    "size": 162816,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "042": {
+    "name": "golbat",
+    "size": 159936,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "043": {
+    "name": "oddish",
+    "size": 171072,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "044": {
+    "name": "gloom",
+    "size": 159552,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "045": {
+    "name": "vileplume",
+    "size": 171456,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "046": {
+    "name": "paras",
+    "size": 150144,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "047": {
+    "name": "parasect",
+    "size": 151104,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "048": {
+    "name": "venonat",
+    "size": 144960,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "049": {
+    "name": "venomoth",
+    "size": 158016,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "050": {
+    "name": "diglett",
+    "size": 157440,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "051": {
+    "name": "dugtrio",
+    "size": 179712,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "052": {
+    "name": "meowth",
+    "size": 134784,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "053": {
+    "name": "persian",
+    "size": 146880,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "054": {
+    "name": "psyduck",
+    "size": 165120,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "055": {
+    "name": "golduck",
+    "size": 164160,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "056": {
+    "name": "mankey",
+    "size": 154368,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "057": {
+    "name": "primeape",
+    "size": 137280,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "058": {
+    "name": "growlithe",
+    "size": 151680,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "059": {
+    "name": "arcanine",
+    "size": 159552,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "060": {
+    "name": "poliwag",
+    "size": 160704,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "061": {
+    "name": "poliwhirl",
+    "size": 134784,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "062": {
+    "name": "poliwrath",
+    "size": 146112,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "063": {
+    "name": "abra",
+    "size": 161664,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "064": {
+    "name": "kadabra",
+    "size": 164352,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "065": {
+    "name": "alakazam",
+    "size": 155904,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "066": {
+    "name": "machop",
+    "size": 155520,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "067": {
+    "name": "machoke",
+    "size": 158400,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "068": {
+    "name": "machamp",
+    "size": 158976,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "069": {
+    "name": "bellsprout",
+    "size": 154752,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "070": {
+    "name": "weepinbell",
+    "size": 153600,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "071": {
+    "name": "victreebel",
+    "size": 163200,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "072": {
+    "name": "tentacool",
+    "size": 167040,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "073": {
+    "name": "tentacruel",
+    "size": 160704,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "074": {
+    "name": "geodude",
+    "size": 160320,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "075": {
+    "name": "graveler",
+    "size": 144960,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "076": {
+    "name": "golem",
+    "size": 157632,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "077": {
+    "name": "ponyta",
+    "size": 140736,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "078": {
+    "name": "rapidash",
+    "size": 159360,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "079": {
+    "name": "slowpoke",
+    "size": 153216,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "080": {
+    "name": "slowbro",
+    "size": 165696,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "081": {
+    "name": "magnemite",
+    "size": 155520,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "082": {
+    "name": "magneton",
+    "size": 143232,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "083": {
+    "name": "farfetchd",
+    "size": 146496,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "084": {
+    "name": "doduo",
+    "size": 179712,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "085": {
+    "name": "dodrio",
+    "size": 172992,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "086": {
+    "name": "seel",
+    "size": 146496,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "087": {
+    "name": "dewgong",
+    "size": 164352,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "088": {
+    "name": "grimer",
+    "size": 167424,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "089": {
+    "name": "muk",
+    "size": 150528,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "090": {
+    "name": "shellder",
+    "size": 134016,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "091": {
+    "name": "cloyster",
+    "size": 170688,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "092": {
+    "name": "gastly",
+    "size": 161088,
+    "voice": "google-translate-es",
+    "provider": "google"
+  },
+  "093": {
+    "name": "haunter",
+    "size": 156864,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
   "094": {
     "name": "gengar",
-    "size": 1642346,
-    "voice": "jam",
-    "speed": 0.95
+    "size": 171072,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
-  "001": {
-    "size": 498092
+  "095": {
+    "name": "onix",
+    "size": 150144,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
-  "002": {
-    "size": 519212
+  "096": {
+    "name": "drowzee",
+    "size": 147456,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
-  "003": {
-    "size": 473900
+  "097": {
+    "name": "hypno",
+    "size": 160512,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
-  "004": {
-    "size": 481964
+  "098": {
+    "name": "krabby",
+    "size": 153216,
+    "voice": "google-translate-es",
+    "provider": "google"
   },
-  "005": {
-    "size": 590636
-  },
-  "006": {
-    "size": 420908
-  },
-  "007": {
-    "size": 460844
-  },
-  "008": {
-    "size": 504236
-  },
-  "009": {
-    "size": 575276
-  },
-  "010": {
-    "size": 413996
-  },
-  "011": {
-    "size": 552236
-  },
-  "012": {
-    "size": 613676
-  },
-  "013": {
-    "size": 508460
-  },
-  "014": {
-    "size": 465068
-  },
-  "015": {
-    "size": 511148
-  },
-  "016": {
-    "size": 512300
-  },
-  "017": {
-    "size": 716588
-  },
-  "018": {
-    "size": 607148
-  },
-  "019": {
-    "size": 427436
-  },
-  "020": {
-    "size": 492716
-  },
-  "021": {
-    "size": 491564
-  },
-  "022": {
-    "size": 533804
-  },
-  "023": {
-    "size": 584492
-  },
-  "024": {
-    "size": 568364
-  },
-  "025": {
-    "size": 552236
-  },
-  "026": {
-    "size": 481196
-  },
-  "027": {
-    "size": 485420
-  },
-  "028": {
-    "size": 514220
-  },
-  "029": {
-    "size": 1774710
-  },
-  "030": {
-    "size": 1270874
-  },
-  "031": {
-    "size": 1434192
-  },
-  "032": {
-    "size": 1337220
-  },
-  "033": {
-    "size": 1432170
-  },
-  "034": {
-    "size": 1502902
-  },
-  "050": {
-    "size": 1609582
+  "099": {
+    "name": "kingler",
+    "size": 167616,
+    "voice": "google-translate-es",
+    "provider": "google"
   }
 }

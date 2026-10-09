@@ -35,22 +35,19 @@ export class DatabaseService {
 
     try {
       // Import dinámico para evitar error en web (donde el plugin no está disponible)
-      const { CapacitorSQLite } = await import('@capacitor-community/sqlite');
-      this.sqlite = new CapacitorSQLite();
+      const { CapacitorSQLite, SQLiteConnection } = await import('@capacitor-community/sqlite');
+      this.sqlite = new SQLiteConnection(CapacitorSQLite);
       const dbName = 'pokedex_kanto.db';
       const dbVersion = 1;
-      const ret = await this.sqlite.createConnection({
-        database: dbName,
-        version: dbVersion,
-        encrypted: false,
-        mode: 'no-encryption'
-      });
-      if (ret.changes && ret.changes.changes && ret.changes.changes < 0) {
-        throw new Error('No se pudo crear la conexión SQLite');
-      }
-      await this.sqlite.open({ database: dbName });
+      this.connection = await this.sqlite.createConnection(
+        dbName,
+        false,
+        'no-encryption',
+        dbVersion,
+        false
+      );
+      await this.connection.open();
       await this.createSchema();
-      this.connection = { database: dbName };
       this.isReady.set(true);
     } catch (err) {
       console.warn('[DatabaseService] SQLite no disponible, usando caché en memoria:', err);
@@ -61,7 +58,7 @@ export class DatabaseService {
   }
 
   private async createSchema(): Promise<void> {
-    if (!this.sqlite) return;
+    if (!this.connection) return;
     const stmts = [
       `CREATE TABLE IF NOT EXISTS pokemon_cache (
         id INTEGER PRIMARY KEY,
@@ -83,20 +80,16 @@ export class DatabaseService {
       `CREATE INDEX IF NOT EXISTS idx_pokemon_name ON pokemon_cache(name);`
     ];
     for (const stmt of stmts) {
-      await this.sqlite.execute({ database: this.connection.database, statements: stmt });
+      await this.connection.execute(stmt);
     }
   }
 
   async getPokemon(id: number): Promise<PokemonData | null> {
     await this.ensureReady();
     if (this.memoryCache.has(id)) return this.memoryCache.get(id)!;
-    if (!this.sqlite || !this.connection) return null;
+    if (!this.connection) return null;
     try {
-      const result = await this.sqlite.query({
-        database: this.connection.database,
-        statement: 'SELECT * FROM pokemon_cache WHERE id = ?',
-        values: [id]
-      });
+      const result = await this.connection.query('SELECT * FROM pokemon_cache WHERE id = ?', [id]);
       if (!result.values || result.values.length === 0) return null;
       return this.rowToPokemon(result.values[0]);
     } catch (err) {
@@ -107,15 +100,11 @@ export class DatabaseService {
 
   async getAllCachedPokemon(): Promise<PokemonData[]> {
     await this.ensureReady();
-    if (!this.sqlite || !this.connection) {
+    if (!this.connection) {
       return Array.from(this.memoryCache.values());
     }
     try {
-      const result = await this.sqlite.query({
-        database: this.connection.database,
-        statement: 'SELECT * FROM pokemon_cache ORDER BY id ASC',
-        values: []
-      });
+      const result = await this.connection.query('SELECT * FROM pokemon_cache ORDER BY id ASC');
       if (!result.values) return [];
       return result.values.map((row: any) => this.rowToPokemon(row));
     } catch (err) {
@@ -127,16 +116,15 @@ export class DatabaseService {
   async savePokemon(pokemon: PokemonData): Promise<void> {
     await this.ensureReady();
     this.memoryCache.set(pokemon.id, pokemon);
-    if (!this.sqlite || !this.connection) return;
+    if (!this.connection) return;
     try {
-      await this.sqlite.run({
-        database: this.connection.database,
-        statement: `INSERT OR REPLACE INTO pokemon_cache
+      await this.connection.run(
+        `INSERT OR REPLACE INTO pokemon_cache
           (id, api_name, pokedex_number, name, formatted_name, height_meters, weight_kg,
            types_json, abilities_json, stats_json, moves_json, description,
            sprite_pixel_url, sprite_artwork_url, cached_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        values: [
+        [
           pokemon.id,
           pokemon.apiName || '',
           pokemon.pokedexNumber,
@@ -153,7 +141,7 @@ export class DatabaseService {
           pokemon.spriteArtworkUrl,
           Date.now()
         ]
-      });
+      );
     } catch (err) {
       console.warn('[DatabaseService] Error guardando Pokémon', pokemon.id, err);
     }
@@ -161,13 +149,9 @@ export class DatabaseService {
 
   async getCachedCount(): Promise<number> {
     await this.ensureReady();
-    if (!this.sqlite || !this.connection) return this.memoryCache.size;
+    if (!this.connection) return this.memoryCache.size;
     try {
-      const result = await this.sqlite.query({
-        database: this.connection.database,
-        statement: 'SELECT COUNT(*) as cnt FROM pokemon_cache',
-        values: []
-      });
+      const result = await this.connection.query('SELECT COUNT(*) as cnt FROM pokemon_cache');
       const row = result.values?.[0];
       return row?.cnt ?? 0;
     } catch {
