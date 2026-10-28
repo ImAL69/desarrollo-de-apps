@@ -1,0 +1,150 @@
+.auth-shell,
+.app-shell {
+  width: min(100% - 32px, 980px);
+  margin: 0 auto;
+  padding: 28px 0 56px;
+}
+
+.auth-shell {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.auth-card,
+.panel {
+  background: var(--ion-card-background, #fff);
+  border: 1px solid var(--ion-color-step-150, #e8e8e8);
+  border-radius: 18px;
+  box-shadow: 0 12px 34px rgb(0 0 0 / 6%);
+}
+
+.auth-card {
+  width: min(100%, 520px);
+  padding: 28px;
+}
+
+.auth-card h1,
+.welcome h1 {
+  margin: 8px 0;
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  letter-spacing: -0.04em;
+}
+
+.auth-card > p,
+.welcome p,
+.panel p {
+  color: var(--ion-color-medium);
+  line-height: 1.5;
+}
+
+.eyebrow {
+  color: var(--ion-color-primary);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+}
+
+.auth-card form {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.auth-card form ion-button {
+  margin: 12px 0 0;
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 20px;
+}
+
+.auth-links button {
+  border: 0;
+  padding: 4px 0;
+  background: transparent;
+  color: var(--ion-color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 8px 0 24px;
+}
+
+.welcome p {
+  margin: 0;
+}
+
+.panel {
+  margin: 16px 0;
+  padding: 22px;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.panel ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --border-color: var(--ion-color-step-150, #e8e8e8);
+}
+
+.button-row,
+.inline-fields {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.inline-fields ion-item {
+  flex: 1 1 170px;
+  min-width: 150px;
+}
+
+.result {
+  overflow: auto;
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--ion-color-step-50, #f7f7f7);
+  color: var(--ion-text-color);
+}
+
+.result.error {
+  background: #fff0f0;
+  color: #a41313;
+}
+
+.result pre {
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .auth-card,
+  .panel {
+    padding: 18px;
+  }
+
+  .welcome {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
