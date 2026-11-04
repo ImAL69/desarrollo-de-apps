@@ -12,7 +12,7 @@ export class ApiService {
   private async request<T>(path: string, method = 'GET', body?: unknown, token?: string): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}${path}`, { method, headers, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });

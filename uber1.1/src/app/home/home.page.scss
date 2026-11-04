@@ -18,7 +18,16 @@ label ion-input { margin-top: 4px; border: 1px solid var(--ion-color-step-200, #
 .panel > label { display: inline-block; width: min(100%, 300px); }
 .panel ion-item { --background: transparent; --padding-start: 0; --inner-padding-end: 0; --border-color: var(--ion-color-step-150, #e8e8e8); }
 .button-row, .inline-fields { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.result { overflow: auto; margin: 16px 0; padding: 16px; border-radius: 12px; background: var(--ion-color-step-50, #f7f7f7); color: var(--ion-text-color); }
+.result { overflow: auto; margin: 16px 0; padding: 16px; border-radius: 12px; background: var(--ion-color-step-50, #f7f7f7); color: var(--ion-color-step-850, #222); }
 .result.error { background: #fff0f0; color: #a41313; }
 .result pre { overflow: auto; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+.fare-card { display: grid; gap: 18px; }
+.fare-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.fare-heading h2 { margin: 4px 0 0; font-size: 1.2rem; }
+.fare-heading strong { color: var(--ion-color-primary); font-size: 1.5rem; white-space: nowrap; }
+.fare-summary, .fare-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.fare-summary { padding: 12px; border-radius: 10px; background: var(--ion-color-step-100, #eee); }
+.fare-summary span, .fare-details span { display: grid; gap: 3px; }
+.fare-summary b, .fare-details b { color: var(--ion-color-medium-shade); font-size: .78rem; }
+@media (max-width: 600px) { .fare-heading { flex-direction: column; } .fare-heading strong { font-size: 1.3rem; } }
 @media (max-width: 600px) { .auth-card, .panel { padding: 18px; } .welcome { align-items: flex-start; flex-direction: column; } }

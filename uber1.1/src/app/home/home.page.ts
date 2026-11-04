@@ -1,17 +1,29 @@
 import { Component, OnInit } from '@angular/core';
-import { JsonPipe } from '@angular/common';
+import { DecimalPipe, JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonSelect, IonSelectOption, IonSpinner, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonSelect, IonSelectOption, IonSpinner, IonTitle, IonToolbar } from '@ionic/angular';
 import { ApiService, type Role, type User } from '../core/api.service';
 
 type Mode = 'login' | 'register' | 'forgot';
+interface FareDisplay {
+  name?: string;
+  estimatedFare?: number;
+  distanceKm?: number;
+  durationMin?: number;
+  baseFare?: number;
+  pricePerKm?: number;
+  pricePerMinute?: number;
+  minimumFare?: number;
+  surgeMultiplier?: number;
+  currency: string;
+}
 const browserStorage = (): Storage | null => typeof localStorage === 'undefined' ? null : localStorage;
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [FormsModule, JsonPipe, IonButton, IonContent, IonHeader, IonInput, IonItem, IonSelect, IonSelectOption, IonSpinner, IonTitle, IonToolbar],
+  imports: [FormsModule, DecimalPipe, JsonPipe, IonButton, IonContent, IonHeader, IonInput, IonItem, IonSelect, IonSelectOption, IonSpinner, IonTitle, IonToolbar],
 })
 export class HomePage implements OnInit {
   token = browserStorage()?.getItem('uber_access_token') ?? '';
@@ -46,6 +58,38 @@ export class HomePage implements OnInit {
     catch (error) { this.notice = error instanceof Error ? error.message : 'Ocurrió un error inesperado.'; this.result = null; return null; }
     finally { this.busy = false; }
   }
+  fareResult(): FareDisplay | null {
+    if (!this.result || typeof this.result !== 'object') return null;
+    const response = this.result as Record<string, unknown>;
+    const fare = this.objectValue(response['fare']);
+    const estimate = this.objectValue(response['estimate']);
+    const breakdown = this.objectValue(estimate?.['fare_breakdown']);
+    if (!fare && !estimate) return null;
+    const source = fare ?? breakdown ?? {};
+    return {
+      name: this.stringValue(fare?.['name']),
+      estimatedFare: this.numberValue(estimate?.['estimated_fare']),
+      distanceKm: this.numberValue(estimate?.['distance_km']),
+      durationMin: this.numberValue(estimate?.['duration_min']),
+      baseFare: this.numberValue(source['base_fare']),
+      pricePerKm: this.numberValue(source['price_per_km']),
+      pricePerMinute: this.numberValue(source['price_per_minute']),
+      minimumFare: this.numberValue(source['minimum_fare']),
+      surgeMultiplier: this.numberValue(source['surge_multiplier']),
+      currency: this.stringValue(estimate?.['currency']) || 'COP',
+    };
+  }
+  formatCurrency(value: number | undefined, currency = 'COP'): string {
+    if (value === undefined) return 'No disponible';
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
+  }
+  private objectValue(value: unknown): Record<string, unknown> | null {
+    return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  }
+  private numberValue(value: unknown): number | undefined {
+    return typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : undefined;
+  }
+  private stringValue(value: unknown): string | undefined { return typeof value === 'string' ? value : undefined; }
   async submitAuth(): Promise<void> {
     let response: any;
     if (this.mode === 'forgot') response = await this.run(() => this.api.auth.forgotPassword(this.fields['email'] ?? '', this.fields['new_password'] ?? ''));
