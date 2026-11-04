@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonSelect, IonSelectOption, IonSpinner, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonSelect, IonSelectOption, IonSpinner, IonTitle, IonToolbar } from '@ionic/angular';
 import { ApiService, type Role, type User } from '../core/api.service';
 
 type Mode = 'login' | 'register' | 'forgot';
@@ -18,6 +18,9 @@ export class HomePage implements OnInit {
   user: User | null = this.loadUser();
   mode: Mode = 'login';
   busy = false;
+  faresBusy = false;
+  fares: Fare[] = [];
+  faresNotice = '';
   notice = '';
   result: unknown = null;
   fields: Record<string, string> = { login: '', password: '', name: '', email: '', phone: '', role: 'client', origin_name: 'Mi ubicación', origin_latitude: '4.6766', origin_longitude: '-74.0483', destination_name: 'Destino', destination_latitude: '4.6664', destination_longitude: '-74.0536', score: '5' };
@@ -57,6 +60,47 @@ export class HomePage implements OnInit {
     if (response?.access_token && response?.user) this.setSession(response.access_token, response.user);
   }
   async signOut(): Promise<void> { await this.run(() => this.api.auth.logout(this.token)); this.clearSession(); }
+  async loadFares(): Promise<void> {
+    this.faresBusy = true;
+    this.faresNotice = '';
+    try {
+      const response = await this.api.admin.fares(this.token);
+      this.fares = extractFares(response);
+      if (!this.fares.length) this.faresNotice = 'No hay tarifas registradas.';
+    } catch (error) {
+      this.faresNotice = error instanceof Error ? error.message : 'No se pudieron cargar las tarifas.';
+    } finally {
+      this.faresBusy = false;
+    }
+  }
+  async createFare(): Promise<void> {
+    this.faresBusy = true;
+    this.faresNotice = '';
+    try {
+      await this.api.admin.createFare(this.token, {
+        name: this.fields['fare_name'],
+        base_fare: this.number('fare_base'),
+        price_per_km: this.number('fare_km'),
+        price_per_minute: this.number('fare_minute'),
+        minimum_fare: this.number('fare_minimum'),
+        surge_multiplier: this.number('fare_surge'),
+        active: true,
+      });
+      try {
+        const response = await this.api.admin.fares(this.token);
+        this.fares = extractFares(response);
+        this.faresNotice = this.fares.length
+          ? 'Tarifa creada y lista actualizada.'
+          : 'Tarifa creada, pero la API no devolvió tarifas para mostrar.';
+      } catch {
+        this.faresNotice = 'Tarifa creada, pero no se pudo actualizar la lista.';
+      }
+    } catch (error) {
+      this.faresNotice = error instanceof Error ? error.message : 'No se pudo crear la tarifa.';
+    } finally {
+      this.faresBusy = false;
+    }
+  }
   coordinates(): Record<string, number> { return { origin_latitude: Number(this.fields['origin_latitude']), origin_longitude: Number(this.fields['origin_longitude']), destination_latitude: Number(this.fields['destination_latitude']), destination_longitude: Number(this.fields['destination_longitude']) }; }
   requestRide(): Promise<unknown> { return this.api.client.createRideRequest(this.token, { ...this.coordinates(), origin_name: this.fields['origin_name'] ?? 'Mi ubicación', destination_name: this.fields['destination_name'] ?? 'Destino' }); }
   async sendLocation(): Promise<void> {
@@ -65,4 +109,31 @@ export class HomePage implements OnInit {
   }
   number(key: string): number { return Number(this.fields[key] ?? 0); }
   roleName(role: Role): string { return role === 'client' ? 'cliente' : role === 'driver' ? 'conductor' : 'administrador'; }
+}
+
+interface Fare {
+  id: number;
+  name: string;
+  base_fare: number;
+  price_per_km: number;
+  price_per_minute: number;
+  minimum_fare: number;
+  surge_multiplier: number;
+  active: boolean;
+}
+
+function extractFares(value: unknown): Fare[] {
+  if (Array.isArray(value)) return value as Fare[];
+  if (!value || typeof value !== 'object') return [];
+  const response = value as Record<string, unknown>;
+  const candidates = [response['fares'], response['data'], response['items']];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate as Fare[];
+    if (candidate && typeof candidate === 'object') {
+      const nested = candidate as Record<string, unknown>;
+      if (Array.isArray(nested['data'])) return nested['data'] as Fare[];
+      if (Array.isArray(nested['fares'])) return nested['fares'] as Fare[];
+    }
+  }
+  return [];
 }

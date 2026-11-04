@@ -27,10 +27,27 @@
         }
 
         @if (user.role === 'admin') {
-          <section class="panel"><h2>Panel de administración</h2><div class="button-row"><ion-button (click)="run(() => api.admin.dashboard(token))">Indicadores</ion-button><ion-button fill="outline" (click)="run(() => api.admin.drivers(token, fields['approval_filter']))">Conductores</ion-button><ion-button fill="outline" (click)="run(() => api.admin.trips(token))">Viajes</ion-button><ion-button fill="outline" (click)="run(() => api.admin.reports(token))">Reportes</ion-button><ion-button fill="outline" (click)="run(() => api.admin.auditLogs(token))">Auditoría</ion-button><ion-button fill="outline" (click)="run(() => api.admin.fares(token))">Tarifas</ion-button></div>
+          <section class="panel"><h2>Panel de administración</h2><div class="button-row"><ion-button (click)="run(() => api.admin.dashboard(token))">Indicadores</ion-button><ion-button fill="outline" (click)="run(() => api.admin.drivers(token, fields['approval_filter']))">Conductores</ion-button><ion-button fill="outline" (click)="run(() => api.admin.trips(token))">Viajes</ion-button><ion-button fill="outline" (click)="run(() => api.admin.reports(token))">Reportes</ion-button><ion-button fill="outline" (click)="run(() => api.admin.auditLogs(token))">Auditoría</ion-button><ion-button fill="outline" (click)="loadFares()">Tarifas</ion-button></div>
             <div class="inline-fields"><label>Filtro de aprobación<ion-input [(ngModel)]="fields['approval_filter']" /></label><label>ID conductor<ion-input type="number" [(ngModel)]="fields['admin_driver_id']" /></label><label>Estado nuevo<ion-input [(ngModel)]="fields['new_approval_status']" /></label><label>Notas<ion-input [(ngModel)]="fields['admin_notes']" /></label><ion-button (click)="run(() => api.admin.approveDriver(token, number('admin_driver_id'), { approval_status: fields['new_approval_status'] || 'approved', admin_notes: fields['admin_notes'] }))">Actualizar conductor</ion-button></div>
           </section>
-          <section class="panel"><h2>Crear tarifa</h2><div class="inline-fields"><label>Nombre<ion-input [(ngModel)]="fields['fare_name']" /></label><label>Tarifa base<ion-input type="number" [(ngModel)]="fields['fare_base']" /></label><label>Precio por km<ion-input type="number" [(ngModel)]="fields['fare_km']" /></label><label>Precio por minuto<ion-input type="number" [(ngModel)]="fields['fare_minute']" /></label><label>Tarifa mínima<ion-input type="number" [(ngModel)]="fields['fare_minimum']" /></label><label>Multiplicador<ion-input type="number" [(ngModel)]="fields['fare_surge']" /></label></div><ion-button (click)="run(() => api.admin.createFare(token, { name: fields['fare_name'], base_fare: number('fare_base'), price_per_km: number('fare_km'), price_per_minute: number('fare_minute'), minimum_fare: number('fare_minimum'), surge_multiplier: number('fare_surge'), active: true }))">Guardar tarifa</ion-button></section>
+          <section class="panel fare-panel">
+            <h2>Tarifas</h2>
+            <p>Administra y consulta las tarifas configuradas.</p>
+            <div class="inline-fields"><label>Nombre<ion-input [(ngModel)]="fields['fare_name']" /></label><label>Tarifa base<ion-input type="number" [(ngModel)]="fields['fare_base']" /></label><label>Precio por km<ion-input type="number" [(ngModel)]="fields['fare_km']" /></label><label>Precio por minuto<ion-input type="number" [(ngModel)]="fields['fare_minute']" /></label><label>Tarifa mínima<ion-input type="number" [(ngModel)]="fields['fare_minimum']" /></label><label>Multiplicador<ion-input type="number" [(ngModel)]="fields['fare_surge']" /></label></div>
+            <div class="button-row"><ion-button [disabled]="faresBusy" (click)="createFare()">{{ faresBusy ? 'Guardando…' : 'Guardar tarifa' }}</ion-button><ion-button fill="outline" [disabled]="faresBusy" (click)="loadFares()">Ver tarifas</ion-button></div>
+            @if (faresBusy) { <p class="fare-status" role="status">Cargando tarifas…</p> }
+            @if (faresNotice) { <p class="fare-status" role="status">{{ faresNotice }}</p> }
+            @if (fares.length) {
+              <ul class="fare-list">
+                @for (fare of fares; track fare.id) {
+                  <li class="fare-card">
+                    <h3>{{ fare.name }}</h3>
+                    <dl><div><dt>Tarifa base</dt><dd>{{ fare.base_fare }}</dd></div><div><dt>Precio por km</dt><dd>{{ fare.price_per_km }}</dd></div><div><dt>Precio por minuto</dt><dd>{{ fare.price_per_minute }}</dd></div><div><dt>Tarifa mínima</dt><dd>{{ fare.minimum_fare }}</dd></div><div><dt>Multiplicador</dt><dd>{{ fare.surge_multiplier }}</dd></div><div><dt>Estado</dt><dd>{{ fare.active ? 'Activa' : 'Inactiva' }}</dd></div></dl>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
         }
 
         @if (busy || notice || result !== null) { <section class="result" [class.error]="!!notice" aria-live="polite">@if (busy) { <ion-spinner name="crescent" /> } @if (notice) { <p>{{ notice }}</p> } @if (result !== null) { <pre>{{ result | json }}</pre> }</section> }
