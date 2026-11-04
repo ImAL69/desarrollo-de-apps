@@ -1,56 +1,409 @@
-<ion-header><ion-toolbar><ion-title>Uber · {{ user ? roleName(user.role) : 'Acceso' }}</ion-title></ion-toolbar></ion-header>
-  <ion-content [fullscreen]="true">
-    @if (user) {
-      <main class="app-shell">
-        <section class="welcome"><div><span class="eyebrow">PLATAFORMA DE MOVILIDAD</span><h1>Hola, {{ user.name }}</h1><p>Sesión como {{ roleName(user.role) }} · {{ user.email }}</p></div><ion-button fill="outline" (click)="signOut()">Cerrar sesión</ion-button></section>
+<!-- eslint-disable @angular-eslint/template/label-has-associated-control -->
+<ion-header class="app-header">
+  <ion-toolbar>
+    <div class="topbar">
+      <a class="brand" href="/" aria-label="Uber, inicio">
+        <span class="brand-mark">U</span>
+        <span>urban<span>go</span></span>
+      </a>
+      <div class="topbar-context">
+        <span class="status-dot"></span>
+        <span>{{ user ? roleName(user.role) : 'Acceso seguro' }}</span>
+      </div>
+    </div>
+  </ion-toolbar>
+</ion-header>
 
-        @if (user.role === 'client') {
-          <section class="panel"><h2>Solicitar un viaje</h2><p>Calcula una tarifa estimada y confirma el viaje.</p>
-            <label>Origen<ion-input [(ngModel)]="fields['origin_name']" /></label><label>Latitud de origen<ion-input type="number" [(ngModel)]="fields['origin_latitude']" /></label><label>Longitud de origen<ion-input type="number" [(ngModel)]="fields['origin_longitude']" /></label>
-            <label>Destino<ion-input [(ngModel)]="fields['destination_name']" /></label><label>Latitud de destino<ion-input type="number" [(ngModel)]="fields['destination_latitude']" /></label><label>Longitud de destino<ion-input type="number" [(ngModel)]="fields['destination_longitude']" /></label>
-            <div class="button-row"><ion-button (click)="run(() => api.fares.active())">Ver tarifa activa</ion-button><ion-button fill="outline" (click)="run(() => api.client.estimateFare(token, coordinates()))">Estimar tarifa</ion-button><ion-button (click)="run(() => requestRide())">Solicitar viaje</ion-button></div>
-          </section>
-          <section class="panel"><h2>Tu actividad</h2><div class="button-row"><ion-button fill="outline" (click)="run(() => api.client.active(token))">Viaje activo</ion-button><ion-button fill="outline" (click)="run(() => api.client.trips(token))">Historial</ion-button></div>
-            <div class="inline-fields"><label>ID solicitud activa<ion-input type="number" [(ngModel)]="fields['ride_id']" /></label><ion-button color="medium" (click)="run(() => api.client.cancel(token, number('ride_id'), fields['cancel_reason'] || 'Cancelado por el cliente'))">Cancelar viaje</ion-button></div>
-            <div class="inline-fields"><label>ID viaje para calificar<ion-input type="number" [(ngModel)]="fields['trip_id']" /></label><label>Puntuación 1 a 5<ion-input type="number" [(ngModel)]="fields['score']" /></label><label>Comentario<ion-input [(ngModel)]="fields['comment']" /></label><ion-button color="medium" (click)="run(() => api.client.rateTrip(token, number('trip_id'), { score: number('score'), comment: fields['comment'], has_incident: false }))">Enviar calificación</ion-button></div>
-          </section>
+<ion-content [fullscreen]="true">
+  @if (user) {
+  <main class="app-shell">
+    <section
+      class="welcome hero-panel interactive-surface"
+      (pointermove)="trackPointer($event)"
+      (pointerleave)="resetPointer()"
+      [style.--pointer-x.%]="pointerX"
+      [style.--pointer-y.%]="pointerY"
+    >
+      <div class="hero-copy">
+        <span class="section-kicker">CENTRO DE OPERACIONES</span>
+        <h1>Hola, {{ user.name }}.</h1>
+        <p>Todo lo que necesitas para moverte por la ciudad, en un solo lugar.</p>
+      </div>
+      <div class="hero-actions">
+        <span class="account-chip"
+          ><span class="avatar">{{ user.name.charAt(0).toUpperCase() }}</span>{{ roleName(user.role) }}</span
+        >
+        <ion-button class="logout-button" fill="outline" (click)="signOut()">Cerrar sesión</ion-button>
+      </div>
+    </section>
+
+    @if (user.role === 'client') {
+    <section class="page-grid client-grid">
+      <section class="panel booking-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="section-kicker">NUEVO VIAJE</span>
+            <h2>¿A dónde vamos?</h2>
+            <p>Completa origen y destino para conocer el valor antes de confirmar.</p>
+          </div>
+          <span class="panel-index">01</span>
+        </div>
+        <div class="route-line" aria-hidden="true">
+          <span class="route-pin origin-pin"></span><span class="route-connector"></span
+          ><span class="route-traveler">◆</span><span class="route-pin destination-pin"></span>
+        </div>
+        <div class="form-grid route-fields">
+          <label class="field field-wide"
+            >Origen<ion-input [(ngModel)]="fields['origin_name']" placeholder="Ej. Calle 93 # 12-50"
+          /></label>
+          <label>Latitud<ion-input type="number" [(ngModel)]="fields['origin_latitude']" /></label>
+          <label>Longitud<ion-input type="number" [(ngModel)]="fields['origin_longitude']" /></label>
+          <label class="field field-wide"
+            >Destino<ion-input [(ngModel)]="fields['destination_name']" placeholder="Ej. Parque El Virrey"
+          /></label>
+          <label>Latitud<ion-input type="number" [(ngModel)]="fields['destination_latitude']" /></label>
+          <label>Longitud<ion-input type="number" [(ngModel)]="fields['destination_longitude']" /></label>
+        </div>
+        <div class="action-grid">
+          <ion-button class="primary-action" (click)="run(() => api.client.estimateFare(token, coordinates()))"
+            >Estimar tarifa</ion-button
+          >
+          <ion-button fill="outline" (click)="run(() => api.fares.active())">Ver tarifa activa</ion-button>
+          <ion-button fill="clear" (click)="run(() => requestRide())"
+            >Solicitar viaje <span aria-hidden="true">→</span></ion-button
+          >
+        </div>
+      </section>
+
+      <aside class="panel shortcut-panel">
+        <div class="panel-heading compact">
+          <div>
+            <span class="section-kicker">ACCESOS RÁPIDOS</span>
+            <h2>Tu actividad</h2>
+          </div>
+        </div>
+        <div class="shortcut-list">
+          <button class="shortcut" type="button" (click)="run(() => api.client.active(token))">
+            <span class="shortcut-icon live-icon">↗</span
+            ><span><b>Viaje activo</b><small>Revisa tu recorrido actual</small></span
+            ><span class="shortcut-arrow">→</span>
+          </button>
+          <button class="shortcut" type="button" (click)="run(() => api.client.trips(token))">
+            <span class="shortcut-icon history-icon">↺</span
+            ><span><b>Historial</b><small>Consulta tus viajes anteriores</small></span
+            ><span class="shortcut-arrow">→</span>
+          </button>
+        </div>
+        <div class="tip-box">
+          <span>Consejo</span>
+          <p>Una dirección precisa ayuda a que tu conductor te encuentre más rápido.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel secondary-panel">
+      <div class="panel-heading compact">
+        <div>
+          <span class="section-kicker">DESPUÉS DEL VIAJE</span>
+          <h2>Gestiona tu experiencia</h2>
+        </div>
+      </div>
+      <div class="form-grid activity-fields">
+        <label
+          >ID de solicitud activa<ion-input type="number" [(ngModel)]="fields['ride_id']" placeholder="Ej. 24"
+        /></label>
+        <label>Motivo de cancelación<ion-input [(ngModel)]="fields['cancel_reason']" placeholder="Opcional" /></label>
+        <ion-button
+          color="medium"
+          (click)="run(() => api.client.cancel(token, number('ride_id'), fields['cancel_reason'] || 'Cancelado por el cliente'))"
+          >Cancelar viaje</ion-button
+        >
+        <label
+          >ID de viaje para calificar<ion-input type="number" [(ngModel)]="fields['trip_id']" placeholder="Ej. 24"
+        /></label>
+        <label>Puntuación 1 a 5<ion-input type="number" [(ngModel)]="fields['score']" /></label>
+        <label>Comentario<ion-input [(ngModel)]="fields['comment']" placeholder="¿Cómo fue tu viaje?" /></label>
+        <ion-button
+          color="medium"
+          (click)="run(() => api.client.rateTrip(token, number('trip_id'), { score: number('score'), comment: fields['comment'], has_incident: false }))"
+          >Enviar calificación</ion-button
+        >
+      </div>
+    </section>
+    } @if (user.role === 'driver') {
+    <section class="page-grid">
+      <section class="panel booking-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="section-kicker">JORNADA DEL CONDUCTOR</span>
+            <h2>Listo para salir</h2>
+            <p>Activa tu disponibilidad para recibir solicitudes cercanas.</p>
+          </div>
+          <span class="panel-index">01</span>
+        </div>
+        <div class="action-grid driver-actions">
+          <ion-button class="primary-action" (click)="run(() => api.driver.availability(token, 'available'))"
+            >Conectarme</ion-button
+          >
+          <ion-button fill="outline" (click)="run(() => api.driver.availability(token, 'unavailable'))"
+            >Desconectarme</ion-button
+          >
+          <ion-button fill="clear" (click)="run(() => api.driver.rideRequests(token))"
+            >Ver solicitudes <span aria-hidden="true">→</span></ion-button
+          >
+        </div>
+        <div class="inline-action">
+          <label
+            >ID de solicitud para aceptar<ion-input
+              type="number"
+              [(ngModel)]="fields['request_id']"
+              placeholder="Ej. 12" /></label
+          ><ion-button (click)="run(() => api.driver.accept(token, number('request_id')))"
+            >Aceptar solicitud</ion-button
+          >
+        </div>
+      </section>
+      <aside class="panel shortcut-panel status-panel">
+        <div class="panel-heading compact">
+          <div>
+            <span class="section-kicker">ESTADO</span>
+            <h2>Tu jornada</h2>
+          </div>
+        </div>
+        <div class="status-display">
+          <span class="status-ring"></span>
+          <div>
+            <b>Cuenta lista para operar</b>
+            <p>Recuerda compartir tu ubicación durante el servicio.</p>
+          </div>
+        </div>
+        <ion-button expand="block" fill="outline" (click)="sendLocation()">Enviar ubicación GPS</ion-button>
+      </aside>
+    </section>
+    <section class="panel secondary-panel">
+      <div class="panel-heading compact">
+        <div>
+          <span class="section-kicker">VIAJE ACTUAL</span>
+          <h2>Gestionar servicio</h2>
+        </div>
+      </div>
+      <div class="form-grid activity-fields">
+        <label
+          >ID del viaje<ion-input type="number" [(ngModel)]="fields['driver_trip_id']" placeholder="Ej. 31" /></label
+        ><ion-button (click)="run(() => api.driver.arrive(token, number('driver_trip_id')))">Llegué</ion-button
+        ><ion-button (click)="run(() => api.driver.start(token, number('driver_trip_id')))">Iniciar</ion-button
+        ><label>Distancia real (km)<ion-input type="number" [(ngModel)]="fields['actual_distance_km']" /></label
+        ><label>Duración real (min)<ion-input type="number" [(ngModel)]="fields['actual_duration_min']" /></label
+        ><ion-button
+          (click)="run(() => api.driver.complete(token, number('driver_trip_id'), { actual_distance_km: number('actual_distance_km'), actual_duration_min: number('actual_duration_min') }))"
+          >Finalizar viaje</ion-button
+        >
+      </div>
+    </section>
+    } @if (user.role === 'admin') {
+    <section class="panel admin-panel">
+      <div class="panel-heading">
+        <div>
+          <span class="section-kicker">CONTROL CENTRAL</span>
+          <h2>Panel de administración</h2>
+          <p>Consulta la operación y actualiza la plataforma desde un solo lugar.</p>
+        </div>
+        <span class="panel-index">01</span>
+      </div>
+      <div class="admin-actions">
+        <ion-button (click)="run(() => api.admin.dashboard(token))">Indicadores</ion-button
+        ><ion-button fill="outline" (click)="run(() => api.admin.drivers(token, fields['approval_filter']))"
+          >Conductores</ion-button
+        ><ion-button fill="outline" (click)="run(() => api.admin.trips(token))">Viajes</ion-button
+        ><ion-button fill="outline" (click)="run(() => api.admin.reports(token))">Reportes</ion-button
+        ><ion-button fill="outline" (click)="run(() => api.admin.auditLogs(token))">Auditoría</ion-button
+        ><ion-button fill="outline" (click)="run(() => api.admin.fares(token))">Tarifas</ion-button>
+      </div>
+    </section>
+    <section class="page-grid admin-grid">
+      <section class="panel secondary-panel">
+        <div class="panel-heading compact">
+          <div>
+            <span class="section-kicker">GESTIÓN</span>
+            <h2>Actualizar conductor</h2>
+          </div>
+        </div>
+        <div class="form-grid activity-fields">
+          <label>Filtro de aprobación<ion-input [(ngModel)]="fields['approval_filter']" placeholder="approved" /></label
+          ><label>ID conductor<ion-input type="number" [(ngModel)]="fields['admin_driver_id']" /></label
+          ><label>Estado nuevo<ion-input [(ngModel)]="fields['new_approval_status']" placeholder="approved" /></label
+          ><label>Notas<ion-input [(ngModel)]="fields['admin_notes']" /></label
+          ><ion-button
+            (click)="run(() => api.admin.approveDriver(token, number('admin_driver_id'), { approval_status: fields['new_approval_status'] || 'approved', admin_notes: fields['admin_notes'] }))"
+            >Actualizar conductor</ion-button
+          >
+        </div>
+      </section>
+      <section class="panel secondary-panel">
+        <div class="panel-heading compact">
+          <div>
+            <span class="section-kicker">NUEVA CONFIGURACIÓN</span>
+            <h2>Crear tarifa</h2>
+          </div>
+        </div>
+        <div class="form-grid fare-fields">
+          <label>Nombre<ion-input [(ngModel)]="fields['fare_name']" /></label
+          ><label>Tarifa base<ion-input type="number" [(ngModel)]="fields['fare_base']" /></label
+          ><label>Precio por km<ion-input type="number" [(ngModel)]="fields['fare_km']" /></label
+          ><label>Precio por minuto<ion-input type="number" [(ngModel)]="fields['fare_minute']" /></label
+          ><label>Tarifa mínima<ion-input type="number" [(ngModel)]="fields['fare_minimum']" /></label
+          ><label>Multiplicador<ion-input type="number" [(ngModel)]="fields['fare_surge']" /></label
+          ><ion-button
+            (click)="run(() => api.admin.createFare(token, { name: fields['fare_name'], base_fare: number('fare_base'), price_per_km: number('fare_km'), price_per_minute: number('fare_minute'), minimum_fare: number('fare_minimum'), surge_multiplier: number('fare_surge'), active: true }))"
+            >Guardar tarifa</ion-button
+          >
+        </div>
+      </section>
+    </section>
+    } @if (busy || notice || result !== null) {
+    <section class="result" [class.error]="!!notice" aria-live="polite">
+      <div class="result-heading">
+        <div>
+          <span class="section-kicker">{{ notice ? 'ATENCIÓN' : busy ? 'PROCESANDO' : 'RESULTADO' }}</span>
+          <h2>
+            {{ notice ? 'No pudimos completar la acción' : busy ? 'Estamos actualizando tu información' : 'Respuesta de
+            la plataforma' }}
+          </h2>
+        </div>
+        @if (!busy) {
+        <button class="clear-button" type="button" (click)="clearResult()">
+          Limpiar <span aria-hidden="true">×</span>
+        </button>
         }
-
-        @if (user.role === 'driver') {
-          <section class="panel"><h2>Conductor</h2><p>Tu cuenta debe estar aprobada para conectarte y aceptar servicios.</p><div class="button-row"><ion-button (click)="run(() => api.driver.availability(token, 'available'))">Conectarme</ion-button><ion-button fill="outline" (click)="run(() => api.driver.availability(token, 'unavailable'))">Desconectarme</ion-button><ion-button fill="outline" (click)="run(() => api.driver.rideRequests(token))">Ver solicitudes</ion-button></div>
-            <div class="inline-fields"><label>ID de solicitud para aceptar<ion-input type="number" [(ngModel)]="fields['request_id']" /></label><ion-button (click)="run(() => api.driver.accept(token, number('request_id')))">Aceptar solicitud</ion-button></div>
-          </section>
-          <section class="panel"><h2>Gestionar viaje</h2><div class="inline-fields"><label>ID del viaje<ion-input type="number" [(ngModel)]="fields['driver_trip_id']" /></label><ion-button (click)="run(() => api.driver.arrive(token, number('driver_trip_id')))">Llegué</ion-button><ion-button (click)="run(() => api.driver.start(token, number('driver_trip_id')))">Iniciar</ion-button></div>
-            <div class="inline-fields"><label>Distancia real (km)<ion-input type="number" [(ngModel)]="fields['actual_distance_km']" /></label><label>Duración real (min)<ion-input type="number" [(ngModel)]="fields['actual_duration_min']" /></label><ion-button (click)="run(() => api.driver.complete(token, number('driver_trip_id'), { actual_distance_km: number('actual_distance_km'), actual_duration_min: number('actual_duration_min') }))">Finalizar viaje</ion-button></div>
-            <ion-button fill="outline" (click)="sendLocation()">Enviar ubicación GPS</ion-button>
-          </section>
+      </div>
+      @if (busy) {
+      <div class="loading-state">
+        <ion-spinner name="crescent" /><span>Un momento, estamos conectando con el servicio…</span>
+        <div class="loading-track"><span></span></div>
+      </div>
+      } @if (notice) {
+      <p class="notice-copy">{{ notice }}</p>
+      } @if (result !== null) { @if (fareResult(); as fare) {
+      <div class="fare-card">
+        <div class="fare-heading">
+          <div>
+            <span class="section-kicker">TARIFA</span>
+            <h2>{{ fare.name || 'Estimación de viaje' }}</h2>
+          </div>
+          @if (fare.estimatedFare !== undefined) {
+          <strong>{{ formatCurrency(fare.estimatedFare, fare.currency) }}</strong> }
+        </div>
+        @if (fare.distanceKm !== undefined || fare.durationMin !== undefined) {
+        <div class="fare-summary">
+          @if (fare.distanceKm !== undefined) { <span><b>Distancia</b>{{ fare.distanceKm | number:'1.0-2' }} km</span> }
+          @if (fare.durationMin !== undefined) { <span><b>Duración estimada</b>{{ fare.durationMin }} min</span> }
+        </div>
         }
-
-        @if (user.role === 'admin') {
-          <section class="panel"><h2>Panel de administración</h2><div class="button-row"><ion-button (click)="run(() => api.admin.dashboard(token))">Indicadores</ion-button><ion-button fill="outline" (click)="run(() => api.admin.drivers(token, fields['approval_filter']))">Conductores</ion-button><ion-button fill="outline" (click)="run(() => api.admin.trips(token))">Viajes</ion-button><ion-button fill="outline" (click)="run(() => api.admin.reports(token))">Reportes</ion-button><ion-button fill="outline" (click)="run(() => api.admin.auditLogs(token))">Auditoría</ion-button><ion-button fill="outline" (click)="run(() => api.admin.fares(token))">Tarifas</ion-button></div>
-            <div class="inline-fields"><label>Filtro de aprobación<ion-input [(ngModel)]="fields['approval_filter']" /></label><label>ID conductor<ion-input type="number" [(ngModel)]="fields['admin_driver_id']" /></label><label>Estado nuevo<ion-input [(ngModel)]="fields['new_approval_status']" /></label><label>Notas<ion-input [(ngModel)]="fields['admin_notes']" /></label><ion-button (click)="run(() => api.admin.approveDriver(token, number('admin_driver_id'), { approval_status: fields['new_approval_status'] || 'approved', admin_notes: fields['admin_notes'] }))">Actualizar conductor</ion-button></div>
-          </section>
-          <section class="panel"><h2>Crear tarifa</h2><div class="inline-fields"><label>Nombre<ion-input [(ngModel)]="fields['fare_name']" /></label><label>Tarifa base<ion-input type="number" [(ngModel)]="fields['fare_base']" /></label><label>Precio por km<ion-input type="number" [(ngModel)]="fields['fare_km']" /></label><label>Precio por minuto<ion-input type="number" [(ngModel)]="fields['fare_minute']" /></label><label>Tarifa mínima<ion-input type="number" [(ngModel)]="fields['fare_minimum']" /></label><label>Multiplicador<ion-input type="number" [(ngModel)]="fields['fare_surge']" /></label></div><ion-button (click)="run(() => api.admin.createFare(token, { name: fields['fare_name'], base_fare: number('fare_base'), price_per_km: number('fare_km'), price_per_minute: number('fare_minute'), minimum_fare: number('fare_minimum'), surge_multiplier: number('fare_surge'), active: true }))">Guardar tarifa</ion-button></section>
-        }
-
-        @if (busy || notice || result !== null) { <section class="result" [class.error]="!!notice" aria-live="polite">@if (busy) { <ion-spinner name="crescent" /> } @if (notice) { <p>{{ notice }}</p> } @if (result !== null) { @if (fareResult(); as fare) { <div class="fare-card"><div class="fare-heading"><div><span class="eyebrow">TARIFA</span><h2>{{ fare.name || 'Estimación de viaje' }}</h2></div>@if (fare.estimatedFare !== undefined) { <strong>{{ formatCurrency(fare.estimatedFare, fare.currency) }}</strong> }</div>@if (fare.distanceKm !== undefined || fare.durationMin !== undefined) { <div class="fare-summary">@if (fare.distanceKm !== undefined) { <span><b>Distancia</b>{{ fare.distanceKm | number:'1.0-2' }} km</span> } @if (fare.durationMin !== undefined) { <span><b>Duración estimada</b>{{ fare.durationMin }} min</span> }</div> }<div class="fare-details">@if (fare.baseFare !== undefined) { <span><b>Tarifa base</b>{{ formatCurrency(fare.baseFare, fare.currency) }}</span> } @if (fare.pricePerKm !== undefined) { <span><b>Por kilómetro</b>{{ formatCurrency(fare.pricePerKm, fare.currency) }}</span> } @if (fare.pricePerMinute !== undefined) { <span><b>Por minuto</b>{{ formatCurrency(fare.pricePerMinute, fare.currency) }}</span> } @if (fare.minimumFare !== undefined) { <span><b>Tarifa mínima</b>{{ formatCurrency(fare.minimumFare, fare.currency) }}</span> } @if (fare.surgeMultiplier !== undefined) { <span><b>Multiplicador</b>x{{ fare.surgeMultiplier }}</span> }</div></div> } @else { <pre>{{ result | json }}</pre> } }</section> }
-      </main>
-    } @else {
-      <main class="auth-shell"><section class="auth-card">
-        <span class="eyebrow">PLATAFORMA DE MOVILIDAD</span><h1>{{ mode === 'login' ? 'Inicia sesión' : mode === 'register' ? 'Crea tu cuenta' : 'Restablece tu contraseña' }}</h1><p>Conéctate con la API para solicitar viajes y administrar tu cuenta.</p>
-        <form (ngSubmit)="submitAuth()">
-          @if (mode === 'login') { <label>Correo o teléfono<ion-input name="login" [(ngModel)]="fields['login']" required /></label><label>Contraseña<ion-input name="password" type="password" [(ngModel)]="fields['password']" required /></label> }
-          @if (mode === 'register') {
-            <label>Nombre completo<ion-input name="name" [(ngModel)]="fields['name']" required /></label><label>Correo electrónico<ion-input name="email" type="email" [(ngModel)]="fields['email']" required /></label><label>Teléfono<ion-input name="phone" [(ngModel)]="fields['phone']" required /></label>
-            <ion-item><ion-select name="role" label="Tipo de cuenta" [(ngModel)]="fields['role']"><ion-select-option value="client">Cliente</ion-select-option><ion-select-option value="driver">Conductor</ion-select-option></ion-select></ion-item>
-            <label>Contraseña<ion-input name="registerPassword" type="password" [(ngModel)]="fields['password']" required /></label>
-            @if (fields['role'] === 'driver') { <label>Número de licencia<ion-input name="license" [(ngModel)]="fields['license_number']" required /></label><label>Placa<ion-input name="plate" [(ngModel)]="fields['plate']" required /></label><label>Marca<ion-input name="brand" [(ngModel)]="fields['brand']" required /></label><label>Modelo<ion-input name="model" [(ngModel)]="fields['model']" required /></label><label>Año<ion-input name="year" type="number" [(ngModel)]="fields['year']" required /></label><label>Capacidad<ion-input name="capacity" type="number" [(ngModel)]="fields['capacity']" required /></label><label>Color<ion-input name="color" [(ngModel)]="fields['color']" required /></label> }
-          }
-          @if (mode === 'forgot') { <label>Correo electrónico<ion-input name="email" type="email" [(ngModel)]="fields['email']" required /></label><label>Nueva contraseña<ion-input name="newPassword" type="password" [(ngModel)]="fields['new_password']" required /></label> }
-          <ion-button expand="block" type="submit" [disabled]="busy">@if (busy) { <ion-spinner name="crescent" /> } @else { {{ mode === 'login' ? 'Entrar' : mode === 'register' ? 'Registrarme' : 'Cambiar contraseña' }} }</ion-button>
-        </form>
-        <div class="auth-links"><button type="button" (click)="mode = mode === 'register' ? 'login' : 'register'; notice = ''; result = null">{{ mode === 'register' ? 'Ya tengo una cuenta' : 'Crear una cuenta' }}</button><button type="button" (click)="mode = mode === 'forgot' ? 'login' : 'forgot'; notice = ''; result = null">{{ mode === 'forgot' ? 'Volver al inicio de sesión' : 'Olvidé mi contraseña' }}</button></div>
-        @if (busy || notice || result !== null) { <section class="result" [class.error]="!!notice" aria-live="polite">@if (busy) { <ion-spinner name="crescent" /> } @if (notice) { <p>{{ notice }}</p> } @if (result !== null) { <pre>{{ result | json }}</pre> }</section> }
-      </section></main>
+        <div class="fare-details">
+          @if (fare.baseFare !== undefined) {
+          <span><b>Tarifa base</b>{{ formatCurrency(fare.baseFare, fare.currency) }}</span> } @if (fare.pricePerKm !==
+          undefined) { <span><b>Por kilómetro</b>{{ formatCurrency(fare.pricePerKm, fare.currency) }}</span> } @if
+          (fare.pricePerMinute !== undefined) {
+          <span><b>Por minuto</b>{{ formatCurrency(fare.pricePerMinute, fare.currency) }}</span> } @if (fare.minimumFare
+          !== undefined) { <span><b>Tarifa mínima</b>{{ formatCurrency(fare.minimumFare, fare.currency) }}</span> } @if
+          (fare.surgeMultiplier !== undefined) { <span><b>Multiplicador</b>x{{ fare.surgeMultiplier }}</span> }
+        </div>
+      </div>
+      } @else {
+      <pre>{{ result | json }}</pre>
+      } }
+    </section>
     }
-  </ion-content>
+  </main>
+  } @else {
+  <main class="auth-shell">
+    <section
+      class="auth-card interactive-surface"
+      (pointermove)="trackPointer($event)"
+      (pointerleave)="resetPointer()"
+      [style.--pointer-x.%]="pointerX"
+      [style.--pointer-y.%]="pointerY"
+    >
+      <div class="auth-brand">
+        <span class="brand-mark">U</span><span>urban<span>go</span></span>
+      </div>
+      <span class="section-kicker">PLATAFORMA DE MOVILIDAD</span>
+      <h1>
+        {{ mode === 'login' ? 'Tu ciudad, a tu ritmo.' : mode === 'register' ? 'Empieza tu recorrido.' : 'Recupera el
+        acceso.' }}
+      </h1>
+      <p>Una experiencia de movilidad sencilla, clara y pensada para cada trayecto.</p>
+      <form (ngSubmit)="submitAuth()">
+        @if (mode === 'login') {
+        <label
+          >Correo o teléfono<ion-input
+            name="login"
+            [(ngModel)]="fields['login']"
+            placeholder="tu@email.com"
+            required /></label
+        ><label
+          >Contraseña<ion-input
+            name="password"
+            type="password"
+            [(ngModel)]="fields['password']"
+            placeholder="••••••••"
+            required
+        /></label>
+        } @if (mode === 'register') {
+        <label>Nombre completo<ion-input name="name" [(ngModel)]="fields['name']" required /></label
+        ><label>Correo electrónico<ion-input name="email" type="email" [(ngModel)]="fields['email']" required /></label
+        ><label>Teléfono<ion-input name="phone" [(ngModel)]="fields['phone']" required /></label
+        ><ion-item
+          ><ion-select name="role" label="Tipo de cuenta" [(ngModel)]="fields['role']"
+            ><ion-select-option value="client">Cliente</ion-select-option
+            ><ion-select-option value="driver">Conductor</ion-select-option></ion-select
+          ></ion-item
+        ><label
+          >Contraseña<ion-input
+            name="registerPassword"
+            type="password"
+            [(ngModel)]="fields['password']"
+            required /></label
+        >@if (fields['role'] === 'driver') {
+        <div class="driver-register-grid">
+          <label>Número de licencia<ion-input name="license" [(ngModel)]="fields['license_number']" required /></label
+          ><label>Placa<ion-input name="plate" [(ngModel)]="fields['plate']" required /></label
+          ><label>Marca<ion-input name="brand" [(ngModel)]="fields['brand']" required /></label
+          ><label>Modelo<ion-input name="model" [(ngModel)]="fields['model']" required /></label
+          ><label>Año<ion-input name="year" type="number" [(ngModel)]="fields['year']" required /></label
+          ><label>Capacidad<ion-input name="capacity" type="number" [(ngModel)]="fields['capacity']" required /></label
+          ><label>Color<ion-input name="color" [(ngModel)]="fields['color']" required /></label>
+        </div>
+        } } @if (mode === 'forgot') {
+        <label>Correo electrónico<ion-input name="email" type="email" [(ngModel)]="fields['email']" required /></label
+        ><label
+          >Nueva contraseña<ion-input name="newPassword" type="password" [(ngModel)]="fields['new_password']" required
+        /></label>
+        }
+        <ion-button class="primary-action" expand="block" type="submit" [disabled]="busy"
+          >@if (busy) { <ion-spinner name="crescent" /> } @else { {{ mode === 'login' ? 'Entrar a mi cuenta' : mode ===
+          'register' ? 'Crear mi cuenta' : 'Cambiar contraseña' }} }</ion-button
+        >
+      </form>
+      <div class="auth-links">
+        <button type="button" (click)="mode = mode === 'register' ? 'login' : 'register'; notice = ''; result = null">
+          {{ mode === 'register' ? 'Ya tengo una cuenta' : 'Crear una cuenta' }}</button
+        ><button type="button" (click)="mode = mode === 'forgot' ? 'login' : 'forgot'; notice = ''; result = null">
+          {{ mode === 'forgot' ? 'Volver al inicio de sesión' : 'Olvidé mi contraseña' }}
+        </button>
+      </div>
+      @if (busy || notice || result !== null) {
+      <section class="result auth-result" [class.error]="!!notice" aria-live="polite">
+        @if (busy) {
+        <div class="loading-state"><ion-spinner name="crescent" /><span>Procesando…</span></div>
+        } @if (notice) {
+        <p class="notice-copy">{{ notice }}</p>
+        } @if (result !== null) {
+        <pre>{{ result | json }}</pre>
+        }
+      </section>
+      }
+    </section>
+  </main>
+  }
+</ion-content>
