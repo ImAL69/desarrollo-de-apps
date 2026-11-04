@@ -1,0 +1,7 @@
+{
+  "name": "uber1.1",
+  "type": "angular",
+  "integrations": {
+    "capacitor": {}
+  }
+}
