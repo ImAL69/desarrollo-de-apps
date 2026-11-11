@@ -64,6 +64,12 @@
           <label>Latitud<ion-input type="number" [(ngModel)]="fields['destination_latitude']" /></label>
           <label>Longitud<ion-input type="number" [(ngModel)]="fields['destination_longitude']" /></label>
         </div>
+        <div class="map-heading">
+          <div><span class="section-kicker">MAPA DE RUTA</span><p>Revisa la zona y ajusta las coordenadas de recogida y destino.</p></div>
+          <div class="map-actions"><ion-button fill="outline" size="small" (click)="updateMap()">Actualizar mapa</ion-button><ion-button fill="outline" size="small" (click)="useCurrentLocation()">Usar mi ubicación</ion-button></div>
+        </div>
+        <iframe #routeMapFrame class="route-map" title="Mapa de origen y destino" loading="lazy" referrerpolicy="no-referrer"></iframe>
+        <p class="map-attribution">Mapa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></p>
         <div class="action-grid">
           <ion-button class="primary-action" (click)="run(() => api.client.estimateFare(token, coordinates()))"
             >Estimar tarifa</ion-button
@@ -392,17 +398,6 @@
           {{ mode === 'forgot' ? 'Volver al inicio de sesión' : 'Olvidé mi contraseña' }}
         </button>
       </div>
-      @if (busy || notice || result !== null) {
-      <section class="result auth-result" [class.error]="!!notice" aria-live="polite">
-        @if (busy) {
-        <div class="loading-state"><ion-spinner name="crescent" /><span>Procesando…</span></div>
-        } @if (notice) {
-        <p class="notice-copy">{{ notice }}</p>
-        } @if (result !== null) {
-        <pre>{{ result | json }}</pre>
-        }
-      </section>
-      }
     </section>
   </main>
   }

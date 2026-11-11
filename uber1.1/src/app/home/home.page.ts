@@ -1,5 +1,5 @@
 import { DecimalPipe, JsonPipe } from '@angular/common';
-import { Component, HostListener, inject, type OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, inject, type OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton,
@@ -58,6 +58,8 @@ export class HomePage implements OnInit {
   result: unknown = null;
   pointerX = 0;
   pointerY = 0;
+  mapUrl = '';
+  private mapFrame?: HTMLIFrameElement;
   fields: Record<string, string> = {
     login: '',
     password: '',
@@ -75,6 +77,10 @@ export class HomePage implements OnInit {
   };
 
   readonly api = inject(ApiService);
+  @ViewChild('routeMapFrame') set routeMapFrame(frame: ElementRef<HTMLIFrameElement> | undefined) {
+    this.mapFrame = frame?.nativeElement;
+    this.refreshMapFrame();
+  }
 
   ngOnInit(): void {
     if (this.token)
@@ -219,6 +225,37 @@ export class HomePage implements OnInit {
       destination_latitude: Number(this.fields['destination_latitude']),
       destination_longitude: Number(this.fields['destination_longitude']),
     };
+  }
+  updateMap(): void {
+    this.refreshMapFrame();
+  }
+  useCurrentLocation(): void {
+    if (!navigator.geolocation) {
+      this.notice = 'Este dispositivo no permite obtener la ubicación.';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        this.fields['origin_latitude'] = String(coords.latitude);
+        this.fields['origin_longitude'] = String(coords.longitude);
+        this.fields['origin_name'] = 'Mi ubicación';
+        this.updateMap();
+      },
+      (error) => (this.notice = error.message),
+    );
+  }
+  private buildMapUrl(): string {
+    const { origin_latitude, origin_longitude, destination_latitude, destination_longitude } = this.coordinates();
+    const centerLat = (origin_latitude + destination_latitude) / 2;
+    const centerLon = (origin_longitude + destination_longitude) / 2;
+    const bbox = `${centerLon - 0.015},${centerLat - 0.01},${centerLon + 0.015},${centerLat + 0.01}`;
+    const url = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${centerLat},${centerLon}`;
+    return url;
+  }
+  private refreshMapFrame(): void {
+    this.mapUrl = this.buildMapUrl();
+    // setAttribute passes a plain string and avoids extensions mishandling Angular's TrustedValue wrapper.
+    this.mapFrame?.setAttribute('src', this.mapUrl);
   }
   requestRide(): Promise<unknown> {
     return this.api.client.createRideRequest(this.token, {
